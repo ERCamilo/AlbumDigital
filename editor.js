@@ -59,6 +59,13 @@ const IMAGE_FILTERS = [
     ['cool', 'Frío'],
     ['soft', 'Suave']
 ];
+const TRANSITION_OPTIONS = [
+    ['gift', 'Caja de regalo'],
+    ['swipe', 'Deslizar'],
+    ['balloon', 'Globo'],
+    ['candle', 'Vela'],
+    ['envelope', 'Sobre']
+];
 
 function escapeHtml(value = '') {
     return String(value)
@@ -210,6 +217,17 @@ function filterCssValue(filter = '') {
 
 function filterOptions(selected = 'none') {
     return IMAGE_FILTERS.map(([value, label]) => `<option value="${value}" ${selected === value ? 'selected' : ''}>${label}</option>`).join('');
+}
+
+function transitionOptions(selected = '', { includeGlobal = false } = {}) {
+    const globalValue = albumData.global?.transition || 'gift';
+    const globalLabel = TRANSITION_OPTIONS.find(([value]) => value === globalValue)?.[1] || globalValue;
+    const options = includeGlobal
+        ? [`<option value="" ${!selected ? 'selected' : ''}>Usar global (${globalLabel})</option>`]
+        : [];
+    return options.concat(
+        TRANSITION_OPTIONS.map(([value, label]) => `<option value="${value}" ${selected === value ? 'selected' : ''}>${label}</option>`)
+    ).join('');
 }
 
 function cloneData(data) {
@@ -741,7 +759,7 @@ window.updateScreenMusic = (sIdx, prop, val) => {
     softDispatch();
 };
 
-selectGlobalTransition.addEventListener('change', e => { albumData.global.transition = e.target.value; updatePreview(); });
+selectGlobalTransition.addEventListener('change', e => { albumData.global.transition = e.target.value; dispatchChange(); });
 checkGlobalProgress.addEventListener('change', e => { albumData.global.progress = e.target.checked; updatePreview(); });
 
 window.toggleScreen = (i, e) => {
@@ -827,7 +845,8 @@ window.updateSelectedScreenOpt = (prop, val) => {
     if (selectedTarget.kind !== 'screen') return;
     const screen = albumData.screens[selectedTarget.sIdx];
     if (!screen.opts) screen.opts = {};
-    screen.opts[prop] = val;
+    if (val === '' || val === null || val === undefined) delete screen.opts[prop];
+    else screen.opts[prop] = val;
     dispatchChange();
 };
 
@@ -1483,6 +1502,17 @@ function renderScreenInspector(sIdx) {
             </div>
 
             <div class="review-card" style="margin-top:6px;">
+                <h4>Transición hacia la siguiente <span class="status-chip ${opts.transition ? 'ok' : 'warn'}">${opts.transition ? 'Personalizada' : 'Global'}</span></h4>
+                <div class="control-group">
+                    <label>Efecto de transición</label>
+                    <select onchange="updateSelectedScreenOpt('transition', this.value)" ${sIdx >= albumData.screens.length - 1 ? 'disabled' : ''}>
+                        ${transitionOptions(opts.transition || '', { includeGlobal: true })}
+                    </select>
+                </div>
+                <p class="muted" style="margin:6px 0 0;">Este efecto aparece al final de esta pantalla y lleva a la siguiente.</p>
+            </div>
+
+            <div class="review-card" style="margin-top:6px;">
                 <h4>Fondo de pantalla <span class="status-chip ${bg.type ? 'ok' : 'warn'}">${bg.type || 'Global'}</span></h4>
                 <div class="background-preview" style="${backgroundPreviewStyle(bg)}"></div>
                 <div class="control-group">
@@ -1991,6 +2021,7 @@ btnExport.addEventListener('click', async () => {
             `window.albumData = ${jsonText};`,
             ''
         ].join('\n');
+        new Function('window', dataContent)({});
 
         const blob = new Blob([dataContent], { type: 'application/javascript' });
         const url = URL.createObjectURL(blob);
@@ -2001,6 +2032,7 @@ btnExport.addEventListener('click', async () => {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
+        showEditorToast('album-data.js exportado correctamente');
     } catch (err) {
         showEditorToast("No se pudo exportar album-data.js.", 'error');
         console.error("Error Exportando:", err);

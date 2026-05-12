@@ -723,7 +723,7 @@ class PageAlbum {
       if (i < this._screens.length - 1) {
         const nextName = this._screens[i + 1].name;
         const nextEmoji = this._screens[i + 1].opts.emoji || '🎁';
-        s.el.appendChild(this._createTrigger(i, nextName, nextEmoji));
+        s.el.appendChild(this._createTrigger(i, nextName, nextEmoji, this._transitionForScreen(i)));
       }
       this._root.appendChild(s.el);
     });
@@ -734,7 +734,7 @@ class PageAlbum {
     }
 
     // Overlay para efecto candle
-    if (this._transition === 'candle') {
+    if (this._screens.some((s) => this._transitionForScreen(s.index) === 'candle')) {
       this._overlay = document.createElement('div');
       this._overlay.className = 'pa-dark-overlay';
       document.body.appendChild(this._overlay);
@@ -782,12 +782,17 @@ class PageAlbum {
     }, 2000);
   }
 
+  _transitionForScreen(index) {
+    const transition = this._screens[index]?.opts?.transition || this._transition || 'gift';
+    return ['gift', 'swipe', 'balloon', 'candle', 'envelope'].includes(transition) ? transition : 'gift';
+  }
+
   /** Crear botón de transición */
-  _createTrigger(fromIndex, nextName, nextEmoji) {
+  _createTrigger(fromIndex, nextName, nextEmoji, transition = 'gift') {
     const wrap = document.createElement('div');
     wrap.style.cssText = 'width:100%;display:flex;flex-direction:column;align-items:center;margin-top:20px;';
 
-    switch (this._transition) {
+    switch (transition) {
       case 'gift': wrap.appendChild(this._triggerGift(fromIndex)); break;
       case 'balloon': wrap.appendChild(this._triggerBalloon(fromIndex)); break;
       case 'candle': wrap.appendChild(this._triggerCandle(fromIndex)); break;
