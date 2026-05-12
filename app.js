@@ -24,7 +24,8 @@
   position: relative;
   isolation: isolate;
   width: calc(100% + 32px); margin-left: -16px;
-  min-height: 100vh; min-height: 100dvh; padding: 0 16px 40px;
+  min-height: 100vh; min-height: 100dvh;
+  padding: 0 16px max(40px, env(safe-area-inset-bottom));
   box-sizing: border-box;
   animation: paFadeIn .6s ease both;
 }

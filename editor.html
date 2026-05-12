@@ -1074,6 +1074,14 @@
             z-index: 2000;
         }
 
+        #editor-toast.error {
+            background: rgba(127, 29, 29, .96);
+        }
+
+        #editor-toast.warn {
+            background: rgba(146, 64, 14, .96);
+        }
+
         #editor-toast.show {
             opacity: 1;
             transform: translate(-50%, 0);
@@ -1536,7 +1544,6 @@
             <summary class="accordion-summary">
                 <h3>Borradores de Edición</h3>
             </summary>
-            <h3>Borradores de Edición</h3>
             <div class="control-group">
                 <label for="draft-name">Nombre del borrador</label>
                 <input type="text" id="draft-name" placeholder="Ej. Cumpleaños María - versión 1">
@@ -1568,7 +1575,6 @@
             <summary class="accordion-summary">
                 <h3>Medios y Archivos Locales</h3>
             </summary>
-            <h3>Medios y Archivos Locales</h3>
             <!-- Modern API Button -->
             <button class="add-btn" id="btn-import-dir" style="margin-bottom: 8px;">
                 <span>📂</span> Importar Directorio de Proyecto
@@ -1627,7 +1633,7 @@
             </div>
         </div>
         <div class="preview-frame">
-            <iframe id="preview-frame" src="index.html?v=editor-preview-6"></iframe>
+            <iframe id="preview-frame" src="index.html?v=editor-preview-8"></iframe>
         </div>
         <div class="module-dock">
             <div class="module-dock-header">
@@ -1713,7 +1719,7 @@
 
     <div id="editor-toast" role="status" aria-live="polite"></div>
 
-    <script src="editor.js?v=editor-preview-8"></script>
+    <script src="editor.js?v=editor-preview-9"></script>
 </body>
 
 </html>

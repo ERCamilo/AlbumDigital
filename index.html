@@ -73,7 +73,9 @@
       z-index: 2;
       max-width: 460px;
       margin: 0 auto;
-      padding: 0 16px 80px;
+      padding: 0 16px;
+      min-height: 100vh;
+      min-height: 100dvh;
     }
 
     /* ══════════════════════════════════
@@ -1561,8 +1563,8 @@
   <div id="audio-toast">🎵</div>
   <button id="audio-mini" title="Play / Pausa">▶</button>
 
-  <script src="app.js?v=editor-preview-6"></script>
-  <script src="album-data.js?v=editor-preview-6"></script>
+  <script src="app.js?v=editor-preview-7"></script>
+  <script src="album-data.js?v=editor-preview-7"></script>
   <script>
     let currentAlbumData = window.albumData || null;
 
@@ -1716,7 +1718,7 @@
         const d = currentSec ? map.get(currentSec) : null;
         if (!d) { miniBtn.classList.remove('visible', 'playing'); return; }
         miniBtn.classList.add('visible');
-        miniBtn.textContent = d.audio.paused ? '�–¶' : '⏸';
+        miniBtn.textContent = d.audio.paused ? '▶' : '⏸';
         miniBtn.classList.toggle('playing', !d.audio.paused);
       }
       miniBtn.addEventListener('click', () => {
@@ -1754,12 +1756,12 @@
       function syncUI(d, playing) {
         d.card.classList.toggle('playing', playing);
         const btn = d.card.querySelector('.audio-btn');
-        if (btn) { btn.textContent = playing ? '⏸' : '�–¶'; btn.classList.toggle('playing', playing); }
+        if (btn) { btn.textContent = playing ? '⏸' : '▶'; btn.classList.toggle('playing', playing); }
         const cb = d.sec.querySelector('.collage-play-btn');
-        if (cb) { cb.textContent = playing ? '⏸' : '�–¶'; cb.classList.toggle('playing', playing); }
+        if (cb) { cb.textContent = playing ? '⏸' : '▶'; cb.classList.toggle('playing', playing); }
         // Mini botón inline (modo compacto)
         const mi = d.sec.querySelector('.audio-mini-inline');
-        if (mi) { mi.textContent = playing ? '⏸' : '�–¶'; mi.classList.toggle('playing', playing); }
+        if (mi) { mi.textContent = playing ? '⏸' : '▶'; mi.classList.toggle('playing', playing); }
         updateMini();
       }
 
@@ -1972,11 +1974,9 @@
       else { addPh(d); }
       return d;
     }
-    function addPh(el) { el.innerHTML += '<div class="ph"><div class="ph-icon">�–¼ï¸</div><span>imagen</span></div>'; }
+    function addPh(el) { el.innerHTML += '<div class="ph"><div class="ph-icon">▧</div><span>imagen</span></div>'; }
 
-    /* ╔═══════════════════════════════════════════════�—
-       ║   API PÚBLICA  →  album.*                     ║
-       ╚═══════════════════════════════════════════════╝ */
+    /* API pública: album.* */
     const album = (() => {
       const root = document.getElementById('album-root');
       function append(el) { root.appendChild(el); return el; }
@@ -2055,10 +2055,10 @@
         frame.style.position = 'relative';
         if (src) {
           const _img = document.createElement('img'); _img.src = src; _img.alt = texto; _img.loading = 'lazy';
-          _img.onerror = () => { if (_img.src.endsWith('.png')) { _img.src = _img.src.replace(/\.png$/, '.jpeg'); } else { _img.remove(); frame.innerHTML = `<div class="ph" style="min-height:220px"><div class="ph-icon">�–¼ï¸</div><span>Foto no encontrada</span></div>`; } };
+          _img.onerror = () => { if (_img.src.endsWith('.png')) { _img.src = _img.src.replace(/\.png$/, '.jpeg'); } else { _img.remove(); frame.innerHTML = `<div class="ph" style="min-height:220px"><div class="ph-icon">▧</div><span>Foto no encontrada</span></div>`; } };
           frame.appendChild(_img);
         }
-        else { frame.innerHTML = `<div class="ph" style="min-height:220px"><div class="ph-icon">�–¼ï¸</div><span>Coloca tu foto aquí</span></div>`; }
+        else { frame.innerHTML = `<div class="ph" style="min-height:220px"><div class="ph-icon">▧</div><span>Coloca tu foto aquí</span></div>`; }
         if (badge) { const bdg = document.createElement('div'); bdg.style.cssText = 'position:absolute;top:10px;right:10px;background:rgba(0,0,0,.5);backdrop-filter:blur(6px);border-radius:20px;padding:4px 10px;font-size:16px;z-index:2'; bdg.textContent = badge; frame.appendChild(bdg); }
 
         const sec = makeSection(frame);
@@ -2147,7 +2147,7 @@
           const c = coords[i % coords.length];
           const d = document.createElement('div'); d.className = 'scatter-item';
           d.style.cssText = `top:${c.t};left:${c.l};transform:rotate(${c.r});z-index:${c.z}`;
-          if (src) { d.innerHTML = `<img src="${src}" alt="">`; } else { d.innerHTML = '<div class="ph" style="min-height:120px"><div class="ph-icon">�–¼ï¸</div></div>'; }
+          if (src) { d.innerHTML = `<img src="${src}" alt="">`; } else { d.innerHTML = '<div class="ph" style="min-height:120px"><div class="ph-icon">▧</div></div>'; }
           inner.appendChild(d);
         });
         const sec = makeSection(inner);
@@ -2222,7 +2222,7 @@
       return { inicio, cierre, separador, titulo, foto, video, gif, collage, mensaje, musica, deseos, estadisticas };
     })();
 
-    /* ╔═══════════════════════════════════════════════════════════════════════�—
+    /*
        ║                                                                       ║
        ║                   ✏️  MI ÁLBUM — EDITA AQUÍ                           ║
        ║                                                                       ║
@@ -2305,7 +2305,7 @@
       }
     });
 
-    /* ╔═══════════════════════════════════════════════�—
+    /*
        ║   HELPERS DE RUTAS                            ║
        ╚═══════════════════════════════════════════════╝ */
     function fotoPNG(carpeta, numero) { return `fotos/${carpeta}/foto${numero}.png`; }
@@ -2313,121 +2313,7 @@
     function fotoAuto(carpeta, numero) { return `fotos/${carpeta}/foto${numero}.png`; }
     function videoMP4(numero) { return `videos/video${numero}.mp4`; }
     function mp3(numero) { const F = ['Arena_Ardiente.mp3', 'Mi_Motor_y_Mi_Corazón.mp3', 'Pamela_Rompe_La_Pista.mp3']; return `mp3/${F[numero] || F[0]}`; }
-  </script>
-<!-- Code injected by live-server -->
-<script>
-	// <![CDATA[  <-- For SVG support
-	if ('WebSocket' in window) {
-		(function () {
-			function refreshCSS() {
-				var sheets = [].slice.call(document.getElementsByTagName("link"));
-				var head = document.getElementsByTagName("head")[0];
-				for (var i = 0; i < sheets.length; ++i) {
-					var elem = sheets[i];
-					var parent = elem.parentElement || head;
-					parent.removeChild(elem);
-					var rel = elem.rel;
-					if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
-						var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
-						elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
-					}
-					parent.appendChild(elem);
-				}
-			}
-			var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
-			var address = protocol + window.location.host + window.location.pathname + '/ws';
-			var socket = new WebSocket(address);
-			socket.onmessage = function (msg) {
-				if (msg.data == 'reload') window.location.reload();
-				else if (msg.data == 'refreshcss') refreshCSS();
-			};
-			if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
-				console.log('Live reload enabled.');
-				sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
-			}
-		})();
-	}
-	else {
-		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
-	}
-	// ]]>
-</script>
-<!-- Code injected by live-server -->
-<script>
-	// <![CDATA[  <-- For SVG support
-	if ('WebSocket' in window) {
-		(function () {
-			function refreshCSS() {
-				var sheets = [].slice.call(document.getElementsByTagName("link"));
-				var head = document.getElementsByTagName("head")[0];
-				for (var i = 0; i < sheets.length; ++i) {
-					var elem = sheets[i];
-					var parent = elem.parentElement || head;
-					parent.removeChild(elem);
-					var rel = elem.rel;
-					if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
-						var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
-						elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
-					}
-					parent.appendChild(elem);
-				}
-			}
-			var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
-			var address = protocol + window.location.host + window.location.pathname + '/ws';
-			var socket = new WebSocket(address);
-			socket.onmessage = function (msg) {
-				if (msg.data == 'reload') window.location.reload();
-				else if (msg.data == 'refreshcss') refreshCSS();
-			};
-			if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
-				console.log('Live reload enabled.');
-				sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
-			}
-		})();
-	}
-	else {
-		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
-	}
-	// ]]>
-</script>
-<!-- Code injected by live-server -->
-<script>
-	// <![CDATA[  <-- For SVG support
-	if ('WebSocket' in window) {
-		(function () {
-			function refreshCSS() {
-				var sheets = [].slice.call(document.getElementsByTagName("link"));
-				var head = document.getElementsByTagName("head")[0];
-				for (var i = 0; i < sheets.length; ++i) {
-					var elem = sheets[i];
-					var parent = elem.parentElement || head;
-					parent.removeChild(elem);
-					var rel = elem.rel;
-					if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
-						var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
-						elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
-					}
-					parent.appendChild(elem);
-				}
-			}
-			var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
-			var address = protocol + window.location.host + window.location.pathname + '/ws';
-			var socket = new WebSocket(address);
-			socket.onmessage = function (msg) {
-				if (msg.data == 'reload') window.location.reload();
-				else if (msg.data == 'refreshcss') refreshCSS();
-			};
-			if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
-				console.log('Live reload enabled.');
-				sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
-			}
-		})();
-	}
-	else {
-		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
-	}
-	// ]]>
-</script>
+  </script>
 </body>
 
 </html>

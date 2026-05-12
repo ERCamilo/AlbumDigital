@@ -322,12 +322,14 @@ function applyDraftPayload(payload, message = 'Borrador cargado') {
     showEditorToast(message);
 }
 
-function showEditorToast(message) {
+function showEditorToast(message, type = 'info') {
     if (!editorToast) return;
     editorToast.textContent = message;
+    editorToast.classList.remove('error', 'warn');
+    if (type === 'error' || type === 'warn') editorToast.classList.add(type);
     editorToast.classList.add('show');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => editorToast.classList.remove('show'), 1800);
+    toastTimer = setTimeout(() => editorToast.classList.remove('show'), type === 'error' ? 3200 : 2000);
 }
 
 function updateHistoryButtons() {
@@ -809,7 +811,7 @@ window.updateSectionDataJSON = (sIdx, secIdx, val) => {
         albumData.screens[sIdx].sections[secIdx].data = JSON.parse(val);
         softDispatch();
     } catch (e) {
-        alert("JSON Inválido. Asegúrate de usar comillas dobles en las claves.");
+        showEditorToast("JSON inválido. Usa comillas dobles en las claves.", 'error');
     }
 };
 window.updateSectionSrc = (sIdx, secIdx, val) => { albumData.screens[sIdx].sections[secIdx].src = val; softDispatch(); };
@@ -888,7 +890,7 @@ window.updateSelectedSectionJSON = (val) => {
         albumData.screens[selectedTarget.sIdx].sections[selectedTarget.secIdx].data = JSON.parse(val);
         dispatchChange();
     } catch (e) {
-        alert("JSON inválido. Revisa comillas, comas y llaves.");
+        showEditorToast("JSON inválido. Revisa comillas, comas y llaves.", 'error');
     }
 };
 
@@ -1231,7 +1233,7 @@ window.selectReview = () => {
 window.saveNamedDraft = () => {
     const name = (draftNameInput?.value || activeDraftName || '').trim();
     if (!name) {
-        alert('Escribe un nombre para guardar este borrador.');
+        showEditorToast('Escribe un nombre para guardar este borrador.', 'warn');
         draftNameInput?.focus();
         return;
     }
@@ -1248,13 +1250,13 @@ window.saveNamedDraft = () => {
 window.reloadActiveDraft = () => {
     const name = activeDraftName || draftList?.value || '';
     if (!name) {
-        alert('Selecciona o guarda un borrador para poder recargarlo.');
+        showEditorToast('Selecciona o guarda un borrador para recargarlo.', 'warn');
         return;
     }
 
     const drafts = getNamedDrafts();
     if (!drafts[name]) {
-        alert('No se encontró el borrador activo.');
+        showEditorToast('No se encontró el borrador activo.', 'error');
         renderDraftList();
         return;
     }
@@ -1264,7 +1266,7 @@ window.reloadActiveDraft = () => {
         setActiveDraftName(name);
         renderDraftList();
     } catch (error) {
-        alert('No se pudo recargar el borrador activo.');
+        showEditorToast('No se pudo recargar el borrador activo.', 'error');
         console.error(error);
     }
 };
@@ -1274,7 +1276,7 @@ window.loadSelectedDraft = (name) => {
     const drafts = getNamedDrafts();
     const payload = drafts[name];
     if (!payload) {
-        alert('No se encontró ese borrador.');
+        showEditorToast('No se encontró ese borrador.', 'error');
         renderDraftList();
         return;
     }
@@ -1284,7 +1286,7 @@ window.loadSelectedDraft = (name) => {
         setActiveDraftName(name);
         renderDraftList();
     } catch (error) {
-        alert('No se pudo cargar el borrador seleccionado.');
+        showEditorToast('No se pudo cargar el borrador seleccionado.', 'error');
         console.error(error);
     }
 };
@@ -1292,7 +1294,7 @@ window.loadSelectedDraft = (name) => {
 window.deleteSelectedDraft = () => {
     const name = draftList?.value || activeDraftName;
     if (!name) {
-        alert('Selecciona un borrador para borrar.');
+        showEditorToast('Selecciona un borrador para borrar.', 'warn');
         return;
     }
     if (!confirm(`¿Borrar el borrador "${name}"?`)) return;
@@ -1340,7 +1342,7 @@ window.importDraftFile = async (file) => {
         applyDraftPayload(payload, `Archivo cargado: ${payload.name || file.name}`);
         renderDraftList();
     } catch (error) {
-        alert('No se pudo importar el archivo de edición. Debe ser JSON válido de este editor.');
+        showEditorToast('No se pudo importar. Debe ser un JSON válido de este editor.', 'error');
         console.error(error);
     }
 };
@@ -2000,7 +2002,7 @@ btnExport.addEventListener('click', async () => {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
     } catch (err) {
-        alert("No se pudo exportar album-data.js. Puedes abrir la consola (F12) y copiar el objeto 'albumData' manualmente.");
+        showEditorToast("No se pudo exportar album-data.js.", 'error');
         console.error("Error Exportando:", err);
     } finally {
         btnExport.textContent = "Exportar Datos";
@@ -2153,7 +2155,7 @@ async function restoreProjectDirectory({ silent = false, automatic = false } = {
         if (automatic) showEditorToast(`Carpeta restaurada: ${dirHandle.name}`);
         return true;
     } catch (e) {
-        if (!silent) alert("No se pudo restaurar la carpeta (puede haber sido movida o permisos insuficientes). Elige una nueva.");
+        if (!silent) showEditorToast("No se pudo restaurar la carpeta. Elige una nueva.", 'error');
         console.error(e);
         if (btnRestoreDir) btnRestoreDir.style.display = 'none';
         if (btnGalleryRestoreDir) btnGalleryRestoreDir.style.display = 'none';
