@@ -729,9 +729,109 @@
       object-fit: cover;
     }
 
+    .photo-frame.photo-size-small {
+      max-width: 260px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .photo-frame.photo-size-medium {
+      max-width: 340px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .photo-frame.photo-size-full {
+      max-width: 100%;
+    }
+
+    .photo-frame.photo-shape-soft,
+    .photo-frame.photo-shape-soft img {
+      border-radius: 12px;
+    }
+
+    .photo-frame.photo-shape-rounded,
+    .photo-frame.photo-shape-rounded img {
+      border-radius: 22px;
+    }
+
+    .photo-frame.photo-shape-pill,
+    .photo-frame.photo-shape-pill img {
+      border-radius: 34px;
+    }
+
+    .photo-frame.photo-shape-circle {
+      aspect-ratio: 1 / 1;
+      max-width: 320px;
+      border-radius: 50%;
+    }
+
+    .photo-frame.photo-shape-circle img {
+      aspect-ratio: 1 / 1;
+      border-radius: 50%;
+    }
+
+    .photo-frame.photo-fit-contain img {
+      object-fit: contain;
+      background: #050816;
+    }
+
+    .photo-filter-grayscale img { filter: grayscale(1); }
+    .photo-filter-bw img { filter: grayscale(1) contrast(1.18); }
+    .photo-filter-sepia img { filter: sepia(.78) saturate(.88); }
+    .photo-filter-warm img { filter: sepia(.25) saturate(1.25) contrast(1.05); }
+    .photo-filter-cool img { filter: saturate(.9) hue-rotate(18deg); }
+    .photo-filter-soft img { filter: brightness(1.08) contrast(.92) saturate(.9); }
+
     .photo-frame.ratio-16x9 video {
       aspect-ratio: 16/9;
       object-fit: cover;
+    }
+
+    .photo-frame.ratio-sq video {
+      aspect-ratio: 1/1;
+      object-fit: cover;
+    }
+
+    .photo-frame.ratio-4x5 video {
+      aspect-ratio: 4/5;
+      object-fit: cover;
+    }
+
+    .photo-frame.video-size-small {
+      max-width: 260px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .photo-frame.video-size-medium {
+      max-width: 340px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .photo-frame.video-size-full {
+      max-width: 100%;
+    }
+
+    .photo-frame.video-shape-soft,
+    .photo-frame.video-shape-soft video {
+      border-radius: 12px;
+    }
+
+    .photo-frame.video-shape-rounded,
+    .photo-frame.video-shape-rounded video {
+      border-radius: 22px;
+    }
+
+    .photo-frame.video-shape-pill,
+    .photo-frame.video-shape-pill video {
+      border-radius: 34px;
+    }
+
+    .photo-frame.video-fit-contain video {
+      object-fit: contain;
+      background: #050816;
     }
 
     /* ── Separador / Títulos ── */
@@ -1461,8 +1561,8 @@
   <div id="audio-toast">🎵</div>
   <button id="audio-mini" title="Play / Pausa">▶</button>
 
-  <script src="app.js?v=editor-preview-2"></script>
-  <script src="album-data.js?v=editor-preview-2"></script>
+  <script src="app.js?v=editor-preview-6"></script>
+  <script src="album-data.js?v=editor-preview-6"></script>
   <script>
     let currentAlbumData = window.albumData || null;
 
@@ -1940,10 +2040,14 @@
       /* ── foto ──
          audio: { src, title, artist, volume, loop }  ← opcional
       ── */
-      function foto(src, { texto = '', subtexto = '', animacion = 'zoom', ratio = 'portrait', estilo = '', badge = '', audio = null } = {}) {
+      function foto(src, { texto = '', subtexto = '', animacion = 'zoom', ratio = 'portrait', estilo = '', badge = '', audio = null, filter = 'none', size = 'full', shape = 'rounded', fit = 'cover' } = {}) {
         const ratioC = ratio === 'square' ? 'ratio-sq' : ratio === 'wide' ? 'ratio-16x9' : 'ratio-4x5';
+        const sizeC = ['small', 'medium', 'full'].includes(size) ? `photo-size-${size}` : 'photo-size-full';
+        const shapeC = ['soft', 'rounded', 'pill', 'circle'].includes(shape) ? `photo-shape-${shape}` : 'photo-shape-rounded';
+        const filterC = filter && filter !== 'none' ? `photo-filter-${filter}` : '';
+        const fitC = fit === 'contain' ? 'photo-fit-contain' : 'photo-fit-cover';
         const frame = document.createElement('div');
-        frame.className = `photo-frame ${ratioC} anim-target`;
+        frame.className = `photo-frame ${ratioC} ${sizeC} ${shapeC} ${filterC} ${fitC} anim-target`;
         if (estilo === 'gold') frame.style.background = 'linear-gradient(45deg,#f9c846,#fb923c,#f9c846)';
         if (estilo === 'neon') frame.style.cssText += 'box-shadow:0 0 20px #2dd4bf,0 0 60px rgba(45,212,191,.25)';
         if (estilo === 'rainbow') frame.style.background = 'linear-gradient(45deg,#f9c846,#f472b6,#60a5fa,#4ade80,#f9c846)';
@@ -1970,10 +2074,13 @@
       }
 
       /* ── video ── */
-      function video(src, { texto = '', rotacion = 0, silencio = true, ratio = 'wide', animacion = 'flip', audio = null } = {}) {
+      function video(src, { texto = '', rotacion = 0, silencio = true, ratio = 'wide', size = 'full', shape = 'rounded', fit = 'cover', animacion = 'flip', audio = null } = {}) {
         const ratioC = ratio === 'wide' ? 'ratio-16x9' : ratio === 'square' ? 'ratio-sq' : 'ratio-4x5';
+        const sizeC = ['small', 'medium', 'full'].includes(size) ? `video-size-${size}` : 'video-size-full';
+        const shapeC = ['soft', 'rounded', 'pill'].includes(shape) ? `video-shape-${shape}` : 'video-shape-rounded';
+        const fitC = fit === 'contain' ? 'video-fit-contain' : 'video-fit-cover';
         const frame = document.createElement('div');
-        frame.className = `photo-frame ${ratioC} anim-target`; frame.style.position = 'relative';
+        frame.className = `photo-frame ${ratioC} ${sizeC} ${shapeC} ${fitC} anim-target`; frame.style.position = 'relative';
         if (src) {
           const v = document.createElement('video');
           v.src = src; v.autoplay = false; v.loop = true; v.playsInline = true;
@@ -1992,7 +2099,7 @@
         if (videoEl) {
           const vIO = new IntersectionObserver(entries => {
             entries.forEach(e => {
-              if (e.isIntersecting) videoEl.play().catch(() => { });
+              if (e.isIntersecting && videoEl.muted) videoEl.play().catch(() => { });
               else videoEl.pause();
             });
           }, { threshold: 0.3 });
@@ -2188,11 +2295,10 @@
         if (e.data.type === 'ALBUM_UPDATE_DATA') {
           // Mantener la página actual visible tras actualizar los datos
           const currentIndex = window.activeAlbumInstance ? window.activeAlbumInstance._currentIndex : 0;
+          const currentScroll = window.scrollY || document.documentElement.scrollTop || 0;
           window.renderAlbumData(e.data.data, currentIndex);
+          requestAnimationFrame(() => window.scrollTo({ top: currentScroll }));
 
-          if (currentIndex > 0) {
-            window.scrollTo({ top: 0 });
-          }
         } else if (e.data.type === 'ALBUM_GOTO_SCREEN' && window.activeAlbumInstance) {
           window.activeAlbumInstance.goTo(e.data.index);
         }

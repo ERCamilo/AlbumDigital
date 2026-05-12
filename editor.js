@@ -18,6 +18,9 @@ const reviewPanel = document.getElementById('review-panel');
 const moduleModal = document.getElementById('module-modal');
 const modulePickerGrid = document.getElementById('module-picker-grid');
 const editorToast = document.getElementById('editor-toast');
+const draftNameInput = document.getElementById('draft-name');
+const draftList = document.getElementById('draft-list');
+const draftStatus = document.getElementById('draft-status');
 
 let hasInitData = false;
 let activeModuleScreenIdx = null;
@@ -27,6 +30,10 @@ let redoStack = [];
 let lastSnapshot = '';
 let historyPaused = false;
 let toastTimer = null;
+let activeDraftName = '';
+
+const DRAFTS_STORAGE_KEY = 'albumBuilderNamedDrafts';
+const ACTIVE_DRAFT_KEY = 'albumBuilderActiveDraftName';
 
 const MODULE_TYPES = [
     { type: 'foto', icon: '🖼️', title: 'Foto', desc: 'Una imagen destacada con texto y animación.' },
@@ -43,6 +50,15 @@ const MODULE_TYPES = [
 const ANIMATIONS = ['pop', 'zoom', 'flip', 'elastic', 'fade-blur', 'stagger', 'scatter'];
 const COLLAGE_LAYOUTS = ['3t', '3l', '4', '5m', 'scatter', 'carousel'];
 const SCREEN_COLORS = ['pink', 'yellow', 'teal', 'blue', 'green', 'purple'];
+const IMAGE_FILTERS = [
+    ['none', 'Sin filtro'],
+    ['grayscale', 'Escala de grises'],
+    ['bw', 'Blanco y negro'],
+    ['sepia', 'Sepia'],
+    ['warm', 'Cálido'],
+    ['cool', 'Frío'],
+    ['soft', 'Suave']
+];
 
 function escapeHtml(value = '') {
     return String(value)
@@ -176,11 +192,134 @@ function backgroundPreviewStyle(bg = {}) {
         parts.push(`background-image:${escapeHtml(bg.gradient)}`);
     }
     if (bg.color) parts.push(`background-color:${escapeHtml(bg.color)}`);
+    const filter = filterCssValue(bg.filter);
+    if (filter) parts.push(`filter:${filter}`);
     return parts.join(';');
+}
+
+function filterCssValue(filter = '') {
+    return {
+        grayscale: 'grayscale(1)',
+        bw: 'grayscale(1) contrast(1.18)',
+        sepia: 'sepia(.78) saturate(.88)',
+        warm: 'sepia(.25) saturate(1.25) contrast(1.05)',
+        cool: 'saturate(.9) hue-rotate(18deg)',
+        soft: 'brightness(1.08) contrast(.92) saturate(.9)'
+    }[filter] || '';
+}
+
+function filterOptions(selected = 'none') {
+    return IMAGE_FILTERS.map(([value, label]) => `<option value="${value}" ${selected === value ? 'selected' : ''}>${label}</option>`).join('');
 }
 
 function cloneData(data) {
     return JSON.parse(JSON.stringify(data));
+}
+
+function getNamedDrafts() {
+    try {
+        return JSON.parse(localStorage.getItem(DRAFTS_STORAGE_KEY) || '{}');
+    } catch (error) {
+        return {};
+    }
+}
+
+function setNamedDrafts(drafts) {
+    localStorage.setItem(DRAFTS_STORAGE_KEY, JSON.stringify(drafts));
+}
+
+function sanitizeDraftFileName(name) {
+    return String(name || 'album-borrador')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9_-]+/gi, '-')
+        .replace(/^-+|-+$/g, '')
+        .toLowerCase() || 'album-borrador';
+}
+
+function setActiveDraftName(name) {
+    activeDraftName = String(name || '').trim();
+    if (draftNameInput) draftNameInput.value = activeDraftName;
+    if (activeDraftName) localStorage.setItem(ACTIVE_DRAFT_KEY, activeDraftName);
+    else localStorage.removeItem(ACTIVE_DRAFT_KEY);
+    updateDraftStatus();
+}
+
+function renderDraftList() {
+    if (!draftList) return;
+    const drafts = getNamedDrafts();
+    const names = Object.keys(drafts).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    draftList.innerHTML = names.length
+        ? '<option value="">Seleccionar borrador...</option>' + names.map(name => `<option value="${escapeHtml(name)}" ${name === activeDraftName ? 'selected' : ''}>${escapeHtml(name)}</option>`).join('')
+        : '<option value="">Sin borradores guardados</option>';
+    updateDraftStatus();
+}
+
+function formatDraftTime(value) {
+    if (!value) return 'Todavía no se ha guardado.';
+    try {
+        return new Date(value).toLocaleString(undefined, {
+            dateStyle: 'short',
+            timeStyle: 'short'
+        });
+    } catch (error) {
+        return value;
+    }
+}
+
+function updateDraftStatus() {
+    if (!draftStatus) return;
+    const drafts = getNamedDrafts();
+    const active = activeDraftName ? drafts[activeDraftName] : null;
+    if (!activeDraftName) {
+        draftStatus.innerHTML = `
+            <strong>Sin borrador activo</strong>
+            <span>Guarda o selecciona un borrador para activar el autoguardado.</span>
+        `;
+        return;
+    }
+
+    draftStatus.innerHTML = `
+        <strong>${escapeHtml(activeDraftName)}</strong>
+        <span>Autoguardado activo.</span>
+        <span>Último guardado: ${escapeHtml(formatDraftTime(active?.savedAt))}</span>
+    `;
+}
+
+function buildDraftPayload(name) {
+    return {
+        format: 'album-builder-draft',
+        version: 1,
+        name,
+        savedAt: new Date().toISOString(),
+        albumData: cloneData(albumData)
+    };
+}
+
+function autoSaveActiveDraft() {
+    const typedName = (draftNameInput?.value || '').trim();
+    if (!activeDraftName && typedName) setActiveDraftName(typedName);
+    if (!activeDraftName) return;
+    const drafts = getNamedDrafts();
+    drafts[activeDraftName] = buildDraftPayload(activeDraftName);
+    setNamedDrafts(drafts);
+    renderDraftList();
+    updateDraftStatus();
+}
+
+function applyDraftPayload(payload, message = 'Borrador cargado') {
+    const data = payload?.albumData || payload;
+    if (!data?.screens || !Array.isArray(data.screens)) {
+        throw new Error('El archivo no contiene un albumData válido.');
+    }
+    albumData = cloneData(data);
+    selectedTarget = { kind: 'review' };
+    setActiveDraftName(payload?.name || activeDraftName || '');
+    renderSidebar();
+    updatePreview();
+    resetHistory();
+    localStorage.setItem('albumBuilderDraft', JSON.stringify(albumData));
+    showEditorToast(message);
 }
 
 function showEditorToast(message) {
@@ -230,6 +369,7 @@ function applyHistorySnapshot(snapshot, message) {
     updatePreview();
     renderInspectorPanel();
     localStorage.setItem('albumBuilderDraft', JSON.stringify(albumData));
+    autoSaveActiveDraft();
     lastSnapshot = JSON.stringify(albumData);
     historyPaused = false;
     updateHistoryButtons();
@@ -284,12 +424,20 @@ window.addEventListener('message', (e) => {
     if (e.data && e.data.type === 'ALBUM_INIT_DATA' && !hasInitData) {
         hasInitData = true;
 
-        // Usamos siempre los datos limpios del visor. Un borrador viejo puede ocultar módulos
-        // si quedó guardado durante cambios incompletos de diseño.
+        const savedActiveDraft = localStorage.getItem(ACTIVE_DRAFT_KEY) || '';
+        const drafts = getNamedDrafts();
+        if (savedActiveDraft && drafts[savedActiveDraft]) {
+            applyDraftPayload(drafts[savedActiveDraft], `Borrador cargado: ${savedActiveDraft}`);
+            renderDraftList();
+            return;
+        }
+
         albumData = e.data.data;
+        setActiveDraftName(savedActiveDraft);
         renderSidebar();
         updatePreview();
         resetHistory();
+        renderDraftList();
     } else if (e.data && e.data.type === 'ALBUM_SELECT_TARGET') {
         const { sIdx, secIdx } = e.data;
         if (typeof secIdx === 'number') {
@@ -314,6 +462,7 @@ function dispatchChange() {
     captureHistory();
     // Guardar automáticamente cada cambio en LocalStorage
     localStorage.setItem('albumBuilderDraft', JSON.stringify(albumData));
+    autoSaveActiveDraft();
 }
 
 // Envía cambios sin reconstruir el DOM del menú lateral (evita perder el focus del input)
@@ -322,6 +471,7 @@ function softDispatch() {
     renderInspectorPanel();
     captureHistory();
     localStorage.setItem('albumBuilderDraft', JSON.stringify(albumData));
+    autoSaveActiveDraft();
 }
 
 // --- 2. RENDERIZADO DEL PANEL IZQUIERDO (SIDEBAR) ---
@@ -399,6 +549,9 @@ function renderSidebar() {
                 secContainer.appendChild(renderSectionItem(sIdx, secIdx, sec));
             });
         }
+        if (!screen.sections || screen.sections.length === 0) {
+            secContainer.innerHTML = '<div class="empty-state">Esta pantalla no tiene módulos todavía.</div>';
+        }
     });
 
     renderInspectorPanel();
@@ -407,7 +560,8 @@ function renderSidebar() {
 function renderSectionItem(sIdx, secIdx, sec) {
     const sItem = document.createElement('div');
     sItem.className = 'section-item';
-    if (selectedTarget.kind === 'section' && selectedTarget.sIdx === sIdx && selectedTarget.secIdx === secIdx) {
+    const isSelected = selectedTarget.kind === 'section' && selectedTarget.sIdx === sIdx && selectedTarget.secIdx === secIdx;
+    if (isSelected) {
         sItem.classList.add('selected');
     }
     sItem.style.display = 'block';
@@ -445,17 +599,55 @@ function renderSectionItem(sIdx, secIdx, sec) {
     sItem.innerHTML = `
         <div class="section-row" onclick="selectSection(${sIdx}, ${secIdx}, event)">
             <div class="section-main">
-                <span style="font-size: 14px; cursor: grab; color: #cbd5e1;">☰</span>
-                <span class="section-type">${meta.icon} ${meta.title}</span>
-                <span class="section-summary">${escapeHtml(sectionSummary(sec))}</span>
+                <span class="section-grip">☰</span>
+                <span class="section-text">
+                    <span class="section-type">${meta.icon} ${meta.title}</span>
+                    <span class="section-summary">${escapeHtml(sectionSummary(sec))}</span>
+                </span>
             </div>
-            <div style="display:flex; gap:4px;">
+            <div class="section-actions">
                 <button class="btn-icon" style="width:24px;height:24px;font-size:10px;" title="Duplicar módulo" onclick="duplicateSection(${sIdx}, ${secIdx}, event)">⧉</button>
                 <button class="btn-icon danger" style="width:24px;height:24px;font-size:10px;" onclick="deleteSection(${sIdx}, ${secIdx}, event)">❌</button>
             </div>
         </div>
+        ${isSelected ? renderSectionPartsControls(sIdx, secIdx, sec) : ''}
     `;
     return sItem;
+}
+
+function partLabelForSection(sec, item, idx) {
+    if (sec.type === 'collage') {
+        return String(item || `Imagen ${idx + 1}`).split('/').pop();
+    }
+    if (sec.type === 'deseos') {
+        return `${item?.icono || '✨'} ${item?.texto || `Deseo ${idx + 1}`}`;
+    }
+    if (sec.type === 'estadisticas') {
+        return `${item?.numero || '#'} ${item?.etiqueta || `Estadística ${idx + 1}`}`;
+    }
+    return `Elemento ${idx + 1}`;
+}
+
+function renderSectionPartsControls(sIdx, secIdx, sec) {
+    const parts = sec.type === 'collage'
+        ? (Array.isArray(sec.src) ? sec.src : [])
+        : (['deseos', 'estadisticas'].includes(sec.type) && Array.isArray(sec.data) ? sec.data : []);
+
+    if (!parts.length) return '';
+    if (!['collage', 'deseos', 'estadisticas'].includes(sec.type)) return '';
+
+    return `
+        <div class="section-parts" onclick="event.stopPropagation()">
+            ${parts.map((item, idx) => `
+                <div class="section-part-row">
+                    <span class="section-part-index">${idx + 1}</span>
+                    <span class="section-part-label" title="${escapeHtml(partLabelForSection(sec, item, idx))}">${escapeHtml(partLabelForSection(sec, item, idx))}</span>
+                    <button class="section-part-btn" type="button" ${idx === 0 ? 'disabled' : ''} onclick="moveSectionPart(${sIdx}, ${secIdx}, ${idx}, -1, event)" title="Subir">↑</button>
+                    <button class="section-part-btn" type="button" ${idx === parts.length - 1 ? 'disabled' : ''} onclick="moveSectionPart(${sIdx}, ${secIdx}, ${idx}, 1, event)" title="Bajar">↓</button>
+                </div>
+            `).join('')}
+        </div>
+    `;
 }
 
 // --- 3. GENERADOR DE FORMULARIOS POR TIPO DE SECCIÓN ---
@@ -745,6 +937,24 @@ window.removeSelectedListItem = (idx) => {
     dispatchChange();
 };
 
+window.moveSectionPart = (sIdx, secIdx, idx, direction, event = null) => {
+    event?.stopPropagation();
+    const sec = albumData.screens?.[sIdx]?.sections?.[secIdx];
+    if (!sec) return;
+
+    const list = sec.type === 'collage' ? sec.src : sec.data;
+    if (!Array.isArray(list)) return;
+
+    const nextIdx = idx + direction;
+    if (nextIdx < 0 || nextIdx >= list.length) return;
+
+    const [moved] = list.splice(idx, 1);
+    list.splice(nextIdx, 0, moved);
+    selectedTarget = { kind: 'section', sIdx, secIdx };
+    dispatchChange();
+    showEditorToast('Orden actualizado');
+};
+
 window.reRenderSectionForm = (sIdx, secIdx) => {
     const screens = document.querySelectorAll('.screen-item');
     if (screens[sIdx]) {
@@ -931,7 +1141,7 @@ function buildDefaultSection(type) {
 
     // Default mock data so it doesn't crash the UI when inserted
     if (type === 'foto') newData = { type, src: 'fotos/solo/foto0.png', data: { texto: 'Mi Foto', animacion: 'zoom' } };
-    else if (type === 'video') newData = { type, src: 'videos/video0.mp4', data: { texto: 'Nuevo video', animacion: 'flip', silencio: true } };
+    else if (type === 'video') newData = { type, src: 'videos/video0.mp4', data: { texto: 'Nuevo video', animacion: 'flip', silencio: true, ratio: 'wide', size: 'full', shape: 'rounded', fit: 'cover' } };
     else if (type === 'mensaje') newData = { type, data: { emoji: '💌', texto: 'Texto del mensaje...', firma: 'Firma' } };
     else if (type === 'musica') newData = { type, data: { src: 'mp3/Arena_Ardiente.mp3', title: 'Canción Nueva', volume: 0.8, loop: true } };
     else if (type === 'collage') newData = { type, src: ['fotos/solo/foto0.png', 'fotos/solo/foto1.png', 'fotos/solo/foto2.jpeg'], data: { layout: '3t', texto: 'Nuevo Collage' } };
@@ -954,6 +1164,7 @@ function insertSection(sIdx, type) {
     const secIdx = albumData.screens[sIdx].sections.length - 1;
     const secContainer = document.querySelectorAll('.screen-item')[sIdx].querySelector(`#sections-list-${sIdx}`);
     if (secContainer) {
+        secContainer.querySelector('.empty-state')?.remove();
         const newItem = renderSectionItem(sIdx, secIdx, newData);
         secContainer.appendChild(newItem);
         // Despliega automáticamente el nuevo panel
@@ -995,6 +1206,12 @@ window.selectModuleType = (type) => {
     closeModulePicker();
 };
 
+window.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+    if (galleryModal?.classList.contains('active')) closeGallery();
+    if (moduleModal?.classList.contains('active')) closeModulePicker();
+});
+
 window.setPreviewSize = (mode) => {
     const frame = document.querySelector('.preview-frame');
     const buttons = document.querySelectorAll('.preview-toolbar .pill-btn, .appbar-center .pill-btn');
@@ -1009,6 +1226,123 @@ window.selectReview = () => {
     selectedTarget = { kind: 'review' };
     document.querySelectorAll('.section-item, .screen-item').forEach(el => el.classList.remove('selected'));
     renderInspectorPanel();
+};
+
+window.saveNamedDraft = () => {
+    const name = (draftNameInput?.value || activeDraftName || '').trim();
+    if (!name) {
+        alert('Escribe un nombre para guardar este borrador.');
+        draftNameInput?.focus();
+        return;
+    }
+
+    const drafts = getNamedDrafts();
+    drafts[name] = buildDraftPayload(name);
+    setNamedDrafts(drafts);
+    setActiveDraftName(name);
+    renderDraftList();
+    localStorage.setItem('albumBuilderDraft', JSON.stringify(albumData));
+    showEditorToast(`Borrador guardado: ${name}`);
+};
+
+window.reloadActiveDraft = () => {
+    const name = activeDraftName || draftList?.value || '';
+    if (!name) {
+        alert('Selecciona o guarda un borrador para poder recargarlo.');
+        return;
+    }
+
+    const drafts = getNamedDrafts();
+    if (!drafts[name]) {
+        alert('No se encontró el borrador activo.');
+        renderDraftList();
+        return;
+    }
+
+    try {
+        applyDraftPayload(drafts[name], `Borrador recargado: ${name}`);
+        setActiveDraftName(name);
+        renderDraftList();
+    } catch (error) {
+        alert('No se pudo recargar el borrador activo.');
+        console.error(error);
+    }
+};
+
+window.loadSelectedDraft = (name) => {
+    if (!name) return;
+    const drafts = getNamedDrafts();
+    const payload = drafts[name];
+    if (!payload) {
+        alert('No se encontró ese borrador.');
+        renderDraftList();
+        return;
+    }
+
+    try {
+        applyDraftPayload(payload, `Borrador cargado: ${name}`);
+        setActiveDraftName(name);
+        renderDraftList();
+    } catch (error) {
+        alert('No se pudo cargar el borrador seleccionado.');
+        console.error(error);
+    }
+};
+
+window.deleteSelectedDraft = () => {
+    const name = draftList?.value || activeDraftName;
+    if (!name) {
+        alert('Selecciona un borrador para borrar.');
+        return;
+    }
+    if (!confirm(`¿Borrar el borrador "${name}"?`)) return;
+
+    const drafts = getNamedDrafts();
+    delete drafts[name];
+    setNamedDrafts(drafts);
+    if (activeDraftName === name) setActiveDraftName('');
+    renderDraftList();
+    showEditorToast(`Borrador borrado: ${name}`);
+};
+
+window.downloadDraftFile = () => {
+    const name = (draftNameInput?.value || activeDraftName || 'album-borrador').trim();
+    const payload = buildDraftPayload(name);
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${sanitizeDraftFileName(name)}.album-draft.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showEditorToast('Archivo de edición descargado');
+};
+
+window.importDraftFile = async (file) => {
+    if (!file) return;
+    try {
+        const text = await file.text();
+        const payload = JSON.parse(text);
+        if (!payload.name) payload.name = file.name.replace(/\.album-draft\.json$|\.json$/i, '');
+        const drafts = getNamedDrafts();
+        drafts[payload.name] = payload.albumData
+            ? { ...payload, savedAt: new Date().toISOString() }
+            : {
+                format: 'album-builder-draft',
+                version: 1,
+                name: payload.name,
+                savedAt: new Date().toISOString(),
+                albumData: cloneData(payload)
+            };
+        setNamedDrafts(drafts);
+        applyDraftPayload(payload, `Archivo cargado: ${payload.name || file.name}`);
+        renderDraftList();
+    } catch (error) {
+        alert('No se pudo importar el archivo de edición. Debe ser JSON válido de este editor.');
+        console.error(error);
+    }
 };
 
 function collectReferencedAssets() {
@@ -1176,6 +1510,32 @@ function renderScreenInspector(sIdx) {
                     </div>
                     <p class="muted" style="margin:6px 0 0;">Al elegir una imagen, el tipo de fondo cambia automáticamente a Imagen.</p>
                 </div>
+                <div class="field-row">
+                    <div class="control-group">
+                        <label>Ajuste de imagen</label>
+                        <select onchange="updateSelectedScreenBackground('size', this.value)">
+                            <option value="cover" ${(bg.size || 'cover') === 'cover' ? 'selected' : ''}>Cubrir pantalla completa</option>
+                            <option value="contain" ${bg.size === 'contain' ? 'selected' : ''}>Mostrar completa</option>
+                            <option value="100% 100%" ${bg.size === '100% 100%' ? 'selected' : ''}>Estirar a pantalla</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label>Posición</label>
+                        <select onchange="updateSelectedScreenBackground('position', this.value)">
+                            <option value="center center" ${(bg.position || 'center center') === 'center center' ? 'selected' : ''}>Centro</option>
+                            <option value="center top" ${bg.position === 'center top' ? 'selected' : ''}>Arriba</option>
+                            <option value="center bottom" ${bg.position === 'center bottom' ? 'selected' : ''}>Abajo</option>
+                            <option value="left center" ${bg.position === 'left center' ? 'selected' : ''}>Izquierda</option>
+                            <option value="right center" ${bg.position === 'right center' ? 'selected' : ''}>Derecha</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label>Filtro de fondo</label>
+                    <select onchange="updateSelectedScreenBackground('filter', this.value)">
+                        ${filterOptions(bg.filter || 'none')}
+                    </select>
+                </div>
             </div>
 
             <div class="review-card" style="margin-top:6px;">
@@ -1266,6 +1626,48 @@ function sectionInspectorFields(sec, d) {
                 <label>Subtexto</label>
                 <input type="text" value="${escapeHtml(d.subtexto || '')}" onchange="updateSelectedSectionData('subtexto', this.value)">
             </div>
+            <div class="field-row">
+                <div class="control-group">
+                    <label>Formato</label>
+                    <select onchange="updateSelectedSectionData('ratio', this.value)">
+                        <option value="portrait" ${(d.ratio || 'portrait') === 'portrait' ? 'selected' : ''}>Vertical 4:5</option>
+                        <option value="wide" ${d.ratio === 'wide' ? 'selected' : ''}>Horizontal 16:9</option>
+                        <option value="square" ${d.ratio === 'square' ? 'selected' : ''}>Cuadrado 1:1</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>Tamaño</label>
+                    <select onchange="updateSelectedSectionData('size', this.value)">
+                        <option value="full" ${(d.size || 'full') === 'full' ? 'selected' : ''}>Ancho completo</option>
+                        <option value="medium" ${d.size === 'medium' ? 'selected' : ''}>Mediano</option>
+                        <option value="small" ${d.size === 'small' ? 'selected' : ''}>Pequeño</option>
+                    </select>
+                </div>
+            </div>
+            <div class="field-row">
+                <div class="control-group">
+                    <label>Forma</label>
+                    <select onchange="updateSelectedSectionData('shape', this.value)">
+                        <option value="rounded" ${(d.shape || 'rounded') === 'rounded' ? 'selected' : ''}>Redondeado</option>
+                        <option value="soft" ${d.shape === 'soft' ? 'selected' : ''}>Suave</option>
+                        <option value="pill" ${d.shape === 'pill' ? 'selected' : ''}>Muy redondo</option>
+                        <option value="circle" ${d.shape === 'circle' ? 'selected' : ''}>Circular</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>Ajuste</label>
+                    <select onchange="updateSelectedSectionData('fit', this.value)">
+                        <option value="cover" ${(d.fit || 'cover') === 'cover' ? 'selected' : ''}>Cubrir cuadro</option>
+                        <option value="contain" ${d.fit === 'contain' ? 'selected' : ''}>Mostrar completa</option>
+                    </select>
+                </div>
+            </div>
+            <div class="control-group">
+                <label>Filtro</label>
+                <select onchange="updateSelectedSectionData('filter', this.value)">
+                    ${filterOptions(d.filter || 'none')}
+                </select>
+            </div>
             ${commonAnim}
         `;
     }
@@ -1277,6 +1679,45 @@ function sectionInspectorFields(sec, d) {
                 <label>Texto principal</label>
                 <input type="text" value="${escapeHtml(d.texto || '')}" onchange="updateSelectedSectionData('texto', this.value)">
             </div>
+            <div class="field-row">
+                <div class="control-group">
+                    <label>Formato del cuadro</label>
+                    <select onchange="updateSelectedSectionData('ratio', this.value)">
+                        <option value="wide" ${(d.ratio || 'wide') === 'wide' ? 'selected' : ''}>Horizontal 16:9</option>
+                        <option value="square" ${d.ratio === 'square' ? 'selected' : ''}>Cuadrado 1:1</option>
+                        <option value="portrait" ${d.ratio === 'portrait' ? 'selected' : ''}>Vertical 4:5</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>Tamaño</label>
+                    <select onchange="updateSelectedSectionData('size', this.value)">
+                        <option value="full" ${(d.size || 'full') === 'full' ? 'selected' : ''}>Ancho completo</option>
+                        <option value="medium" ${d.size === 'medium' ? 'selected' : ''}>Mediano</option>
+                        <option value="small" ${d.size === 'small' ? 'selected' : ''}>Pequeño</option>
+                    </select>
+                </div>
+            </div>
+            <div class="field-row">
+                <div class="control-group">
+                    <label>Forma</label>
+                    <select onchange="updateSelectedSectionData('shape', this.value)">
+                        <option value="rounded" ${(d.shape || 'rounded') === 'rounded' ? 'selected' : ''}>Redondeado</option>
+                        <option value="soft" ${d.shape === 'soft' ? 'selected' : ''}>Suave</option>
+                        <option value="pill" ${d.shape === 'pill' ? 'selected' : ''}>Muy redondo</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>Ajuste</label>
+                    <select onchange="updateSelectedSectionData('fit', this.value)">
+                        <option value="cover" ${(d.fit || 'cover') === 'cover' ? 'selected' : ''}>Cubrir cuadro</option>
+                        <option value="contain" ${d.fit === 'contain' ? 'selected' : ''}>Mostrar completo</option>
+                    </select>
+                </div>
+            </div>
+            <label class="checkbox-label" style="margin-bottom:16px;">
+                <input type="checkbox" ${d.silencio === false ? 'checked' : ''} onchange="updateSelectedSectionData('silencio', !this.checked)">
+                Reproducir con sonido y controles
+            </label>
             ${commonAnim}
         `;
     }
@@ -1489,8 +1930,16 @@ function renderReviewPanel() {
     const missingAssets = hasGalleryIndex ? assets.filter(path => !loadedPaths.has(path)) : [];
     const emptyScreens = screens.filter(s => !s.sections || s.sections.length === 0).length;
     const advancedSections = sections.filter(s => !['inicio', 'cierre', 'deseos', 'estadisticas', 'foto', 'gif', 'video', 'collage', 'mensaje', 'musica'].includes(s.type)).length;
+    const activeDraft = activeDraftName ? getNamedDrafts()[activeDraftName] : null;
 
     reviewPanel.innerHTML = `
+        <div class="review-card">
+            <h4>Borrador <span class="status-chip ${activeDraftName ? 'ok' : 'warn'}">${activeDraftName ? 'Activo' : 'Sin activar'}</span></h4>
+            <ul class="review-list">
+                <li>${activeDraftName ? `Editando: ${escapeHtml(activeDraftName)}.` : 'Guarda o selecciona un borrador para activar el autoguardado.'}</li>
+                <li>${activeDraftName ? `Último guardado: ${escapeHtml(formatDraftTime(activeDraft?.savedAt))}.` : 'El contenido aún depende solo de la sesión actual.'}</li>
+            </ul>
+        </div>
         <div class="review-card">
             <h4>Medios <span class="status-chip ${missingAssets.length ? 'warn' : assets.length ? 'ok' : 'warn'}">${hasGalleryIndex ? `${missingAssets.length} faltantes` : `${assets.length} rutas`}</span></h4>
             <ul class="review-list">
@@ -1566,6 +2015,9 @@ let currentGalleryTab = 'images';
 const dirPicker = document.getElementById('dir-picker');
 const btnImportDir = document.getElementById('btn-import-dir');
 const btnRestoreDir = document.getElementById('btn-restore-dir');
+const btnGalleryImportDir = document.getElementById('btn-gallery-import-dir');
+const btnGalleryRestoreDir = document.getElementById('btn-gallery-restore-dir');
+const btnGalleryLegacyDir = document.getElementById('btn-gallery-legacy-dir');
 const legacyPickerContainer = document.getElementById('legacy-picker-container');
 const galleryModal = document.getElementById('gallery-modal');
 const galleryGrid = document.getElementById('gallery-grid');
@@ -1630,19 +2082,83 @@ async function processFileExt(file, path) {
     galleryFiles[bucket].push(item);
 }
 
-function finishGalleryLoad() {
+function finishGalleryLoad({ silent = false } = {}) {
     Object.values(galleryFiles).forEach(items => items.sort((a, b) => a.path.localeCompare(b.path, undefined, { numeric: true })));
     const total = galleryFiles.images.length + galleryFiles.videos.length + galleryFiles.audios.length;
     galleryStatus.textContent = `${total} archivos cargados (Fotos: ${galleryFiles.images.length}, Videos: ${galleryFiles.videos.length}, Audios: ${galleryFiles.audios.length})`;
     updatePreview();
     renderInspectorPanel();
-    alert(`✅ ¡Directorio escaneado con éxito!\n\nSe encontraron ${total} archivos multimedia.\nAhora puedes usar los botones "🔍 Galería" para insertarlos visualmente.`);
+    if (!silent) showEditorToast(`${total} archivos multimedia cargados`);
 
     // Cambiar la visual del botón para indicar que hay algo cargado
     const labelElem = document.querySelector('.folder-picker-btn');
     if (labelElem) {
         labelElem.innerHTML = `<span>📂</span> Directorio Cargado (${total} archivos)`;
         labelElem.style.background = '#059669';
+    }
+}
+
+function setGalleryLoadingStatus(message) {
+    if (galleryStatus) galleryStatus.textContent = message;
+}
+
+function syncDirectoryButtons(dirName = '') {
+    if (btnRestoreDir && dirName) {
+        btnRestoreDir.style.display = 'block';
+        btnRestoreDir.innerHTML = `<span>🔄</span> Restaurar Carpeta Anterior (${dirName})`;
+    }
+    if (btnGalleryRestoreDir) {
+        btnGalleryRestoreDir.style.display = dirName ? 'inline-flex' : 'none';
+        btnGalleryRestoreDir.textContent = dirName ? `Restaurar ${dirName}` : 'Restaurar carpeta';
+    }
+}
+
+async function importProjectDirectory() {
+    try {
+        const dirHandle = await showDirectoryPicker();
+        await idb.set('projectDir', dirHandle);
+
+        clearGalleryFiles();
+        setGalleryLoadingStatus('Escaneando directorio...');
+
+        await scanDirectoryHandle(dirHandle);
+        finishGalleryLoad();
+        syncDirectoryButtons(dirHandle.name);
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+async function restoreProjectDirectory({ silent = false, automatic = false } = {}) {
+    try {
+        const dirHandle = await idb.get('projectDir');
+        if (!dirHandle) return false;
+
+        const permission = await dirHandle.queryPermission?.({ mode: 'read' });
+        if (permission !== 'granted') {
+            if (automatic) {
+                setGalleryLoadingStatus('Carpeta anterior disponible. Usa Restaurar carpeta para conceder permiso.');
+                return false;
+            }
+            const perm = await dirHandle.requestPermission({ mode: 'read' });
+            if (perm !== 'granted') throw new Error("Permiso denegado por el usuario.");
+        }
+
+        clearGalleryFiles();
+        setGalleryLoadingStatus('Restaurando directorio...');
+
+        await scanDirectoryHandle(dirHandle);
+        finishGalleryLoad({ silent });
+        syncDirectoryButtons(dirHandle.name);
+        if (automatic) showEditorToast(`Carpeta restaurada: ${dirHandle.name}`);
+        return true;
+    } catch (e) {
+        if (!silent) alert("No se pudo restaurar la carpeta (puede haber sido movida o permisos insuficientes). Elige una nueva.");
+        console.error(e);
+        if (btnRestoreDir) btnRestoreDir.style.display = 'none';
+        if (btnGalleryRestoreDir) btnGalleryRestoreDir.style.display = 'none';
+        await idb.set('projectDir', null);
+        return false;
     }
 }
 
@@ -1712,9 +2228,17 @@ function renderGalleryGrid() {
 
     if (items.length === 0) {
         const message = totalInTab === 0
-            ? `No se encontraron ${currentGalleryTab} en la carpeta importada.`
+            ? `No hay archivos en esta pestaña.`
             : `No hay resultados para "${escapeHtml(query)}".`;
-        galleryGrid.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; color: #94a3b8; padding: 40px;">${message}<br><span style="font-size:12px;color:#64748b;">Importa la carpeta raíz o cambia la búsqueda.</span></div>`;
+        galleryGrid.innerHTML = `
+            <div class="media-empty-state">
+                <div class="media-empty-card">
+                    <strong>${message}</strong>
+                    <span>Importa la carpeta raíz del proyecto, restaura la carpeta anterior o cambia la búsqueda.</span>
+                    <button class="secondary-btn" type="button" onclick="document.getElementById('btn-gallery-import-dir')?.click()">Importar carpeta</button>
+                </div>
+            </div>
+        `;
         return;
     }
 
@@ -1724,11 +2248,11 @@ function renderGalleryGrid() {
         div.title = item.path;
 
         if (currentGalleryTab === 'images') {
-            div.innerHTML = `<img src="${item.url}" loading="lazy"><div class="item-label">${item.name}</div>`;
+            div.innerHTML = `<div class="gallery-media"><img src="${item.url}" loading="lazy" alt="${escapeHtml(item.name)}"></div><span class="media-kind-badge">Foto</span><div class="item-label">${escapeHtml(item.name)}</div>`;
         } else if (currentGalleryTab === 'videos') {
-            div.innerHTML = `<video src="${item.url}" muted onmouseenter="this.play()" onmouseleave="this.pause()"></video><div class="item-label">${item.name}</div>`;
+            div.innerHTML = `<div class="gallery-media"><video src="${item.url}" muted playsinline onmouseenter="this.play()" onmouseleave="this.pause()"></video></div><span class="media-kind-badge">Video</span><div class="item-label">${escapeHtml(item.name)}</div>`;
         } else {
-            div.innerHTML = `<div class="audio-icon">🎵<audio src="${item.url}" controls preload="metadata" onclick="event.stopPropagation()"></audio></div><div class="item-label">${item.name}</div>`;
+            div.innerHTML = `<div class="audio-icon">🎵<audio src="${item.url}" controls preload="metadata" onclick="event.stopPropagation()"></audio></div><span class="media-kind-badge">Audio</span><div class="item-label">${escapeHtml(item.name)}</div>`;
         }
 
         div.onclick = () => {
@@ -1753,6 +2277,8 @@ async function initFileSystem() {
     // Check if modern API is supported
     if (!window.showDirectoryPicker) {
         btnImportDir.style.display = 'none';
+        if (btnGalleryImportDir) btnGalleryImportDir.style.display = 'none';
+        if (btnGalleryLegacyDir) btnGalleryLegacyDir.style.display = 'inline-flex';
         legacyPickerContainer.style.display = 'inline-flex';
         return;
     }
@@ -1760,50 +2286,14 @@ async function initFileSystem() {
     // Check if we have a saved handle
     const savedHandle = await idb.get('projectDir');
     if (savedHandle) {
-        btnRestoreDir.style.display = 'block';
-        btnRestoreDir.innerHTML = `<span>🔄</span> Restaurar Carpeta Anterior (${savedHandle.name})`;
+        syncDirectoryButtons(savedHandle.name);
+        restoreProjectDirectory({ silent: true, automatic: true });
     }
 
-    btnImportDir.addEventListener('click', async () => {
-        try {
-            const dirHandle = await showDirectoryPicker();
-            await idb.set('projectDir', dirHandle);
-
-            clearGalleryFiles();
-            galleryStatus.textContent = 'Escaneando directorio...';
-
-            await scanDirectoryHandle(dirHandle);
-            finishGalleryLoad();
-
-            btnRestoreDir.style.display = 'block';
-            btnRestoreDir.innerHTML = `<span>🔄</span> Restaurar Carpeta Anterior (${dirHandle.name})`;
-        } catch (e) {
-            console.error(e);
-        }
-    });
-
-    btnRestoreDir.addEventListener('click', async () => {
-        try {
-            const dirHandle = await idb.get('projectDir');
-            if (!dirHandle) return;
-
-            // Request permission again (browsers usually require this after reload)
-            const perm = await dirHandle.requestPermission({ mode: 'read' });
-            if (perm !== 'granted') throw new Error("Permiso denegado por el usuario.");
-
-            clearGalleryFiles();
-            galleryStatus.textContent = 'Restaurando directorio...';
-
-            await scanDirectoryHandle(dirHandle);
-            finishGalleryLoad();
-
-        } catch (e) {
-            alert("No se pudo restaurar la carpeta (puede haber sido movida o permisos insuficientes). Elige una nueva.");
-            console.error(e);
-            btnRestoreDir.style.display = 'none';
-            await idb.set('projectDir', null);
-        }
-    });
+    btnImportDir?.addEventListener('click', importProjectDirectory);
+    btnGalleryImportDir?.addEventListener('click', importProjectDirectory);
+    btnRestoreDir?.addEventListener('click', () => restoreProjectDirectory());
+    btnGalleryRestoreDir?.addEventListener('click', () => restoreProjectDirectory());
 }
 
 // Inicializar el guardado local del directorio

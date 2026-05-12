@@ -23,13 +23,21 @@
   display: none; flex-direction: column; align-items: center;
   position: relative;
   isolation: isolate;
-  width: 100%; min-height: 100vh; min-height: 100dvh; padding: 0 0 40px;
+  width: calc(100% + 32px); margin-left: -16px;
+  min-height: 100vh; min-height: 100dvh; padding: 0 16px 40px;
+  box-sizing: border-box;
   animation: paFadeIn .6s ease both;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
 }
 .pa-screen.active { display: flex; }
+.pa-screen-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+}
 .pa-screen-header,
 .pa-screen-content,
 .pa-screen .album-section,
@@ -140,9 +148,11 @@
    TRANSICIÓN: BALLOON (Globo)
 ═══════════════════════════════ */
 .pa-trigger-balloon {
-  position: relative; margin: 40px auto 20px;
+  position: relative; margin: 34px auto 18px;
   cursor: pointer; -webkit-tap-highlight-color: transparent;
   text-align: center;
+  min-height: 190px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
 }
 .balloon-wrap {
   display: inline-block; animation: balloonFloat 2.5s ease-in-out infinite;
@@ -183,9 +193,11 @@
    TRANSICIÓN: CANDLE (Vela)
 ═══════════════════════════════ */
 .pa-trigger-candle {
-  position: relative; margin: 40px auto 20px;
+  position: relative; margin: 34px auto 18px;
   cursor: pointer; -webkit-tap-highlight-color: transparent;
   text-align: center;
+  min-height: 170px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
 }
 .candle-wrap { display: inline-block; position: relative; }
 .candle-body {
@@ -235,9 +247,11 @@
    TRANSICIÓN: ENVELOPE (Sobre)
 ═══════════════════════════════ */
 .pa-trigger-envelope {
-  position: relative; margin: 40px auto 20px;
+  position: relative; margin: 34px auto 18px;
   cursor: pointer; -webkit-tap-highlight-color: transparent;
   text-align: center;
+  min-height: 160px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
 }
 .envelope-wrap {
   width: 160px; height: 110px; position: relative;
@@ -279,23 +293,31 @@
    TRANSICIÓN: SWIPE (Deslizar)
 ═══════════════════════════════ */
 .pa-trigger-swipe {
-  position: relative; margin: 40px auto 20px;
+  position: relative; margin: 24px auto 18px;
   cursor: pointer; -webkit-tap-highlight-color: transparent;
   text-align: center;
+  width: 100%;
+  padding: 0 12px;
+  display: flex; justify-content: center;
 }
 .swipe-indicator {
   display: flex; align-items: center; justify-content: center; gap: 12px;
-  padding: 16px 28px;
+  max-width: min(340px, 100%);
+  padding: 13px 18px;
   background: linear-gradient(135deg, rgba(168,85,247,.2), rgba(244,114,182,.2));
   border: 1px solid rgba(168,85,247,.3); border-radius: 30px;
   animation: swipePulse 2s ease-in-out infinite;
+  box-shadow: 0 10px 24px rgba(15, 10, 35, .22);
 }
 .swipe-arrow {
   font-size: 22px; color: rgba(255,255,255,.7);
   animation: swipeArrow 1.5s ease-in-out infinite;
 }
 .swipe-label {
-  font-size: 14px; color: rgba(240,230,255,.8); letter-spacing: 1px;
+  min-width: 0;
+  font-size: 13px; color: rgba(240,230,255,.84); letter-spacing: .3px;
+  font-weight: 800;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 @keyframes swipePulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(168,85,247,.3); }
@@ -469,6 +491,27 @@ class ScreenBuilder {
    CLASE: PageAlbum (principal)
 ═══════════════════════════════ */
 class PageAlbum {
+  static _escapeHTML(value = '') {
+    return String(value)
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
+  }
+
+  static _filterValue(filter = '') {
+    const filters = {
+      grayscale: 'grayscale(1)',
+      bw: 'grayscale(1) contrast(1.18)',
+      sepia: 'sepia(.78) saturate(.88)',
+      warm: 'sepia(.25) saturate(1.25) contrast(1.05)',
+      cool: 'saturate(.9) hue-rotate(18deg)',
+      soft: 'brightness(1.08) contrast(.92) saturate(.9)'
+    };
+    return filters[filter] || '';
+  }
+
   /**
    * @param {string} rootSelector - Selector del contenedor (#album-root)
    * @param {object} opts
@@ -646,21 +689,28 @@ class PageAlbum {
 
   _applyScreenBackground(screenEl, bg = {}) {
     const type = bg.type || '';
-    screenEl.style.backgroundColor = '';
-    screenEl.style.backgroundImage = '';
-    screenEl.style.backgroundSize = 'cover';
-    screenEl.style.backgroundPosition = 'center center';
-    screenEl.style.backgroundRepeat = 'no-repeat';
+    let layer = screenEl.querySelector(':scope > .pa-screen-bg');
+    if (!layer) {
+      layer = document.createElement('div');
+      layer.className = 'pa-screen-bg';
+      screenEl.prepend(layer);
+    }
+    layer.style.backgroundColor = '';
+    layer.style.backgroundImage = '';
+    layer.style.backgroundSize = 'cover';
+    layer.style.backgroundPosition = bg.position || 'center center';
+    layer.style.backgroundRepeat = 'no-repeat';
+    layer.style.filter = bg.filter && bg.filter !== 'none' ? PageAlbum._filterValue(bg.filter) : '';
 
     if (type === 'color' && bg.color) {
-      screenEl.style.backgroundColor = bg.color;
+      layer.style.backgroundColor = bg.color;
     } else if (type === 'gradient' && bg.gradient) {
-      screenEl.style.backgroundImage = bg.gradient;
-      screenEl.style.backgroundSize = '100% 100%';
+      layer.style.backgroundImage = bg.gradient;
+      layer.style.backgroundSize = '100% 100%';
     } else if (type === 'image' && bg.image) {
-      screenEl.style.backgroundImage = `linear-gradient(rgba(15, 10, 35, .42), rgba(15, 10, 35, .42)), url("${bg.image}")`;
-      screenEl.style.backgroundColor = bg.color || 'transparent';
-      screenEl.style.backgroundSize = 'cover';
+      layer.style.backgroundImage = `linear-gradient(rgba(15, 10, 35, .42), rgba(15, 10, 35, .42)), url("${bg.image}")`;
+      layer.style.backgroundColor = bg.color || 'transparent';
+      layer.style.backgroundSize = bg.size || 'cover';
     }
   }
 
@@ -777,10 +827,10 @@ class PageAlbum {
     const el = document.createElement('div');
     el.className = 'pa-trigger-balloon';
     el.innerHTML = `
-          < div class="balloon-wrap" >
+          <div class="balloon-wrap">
         <div class="balloon-body" style="background:linear-gradient(135deg,${color},${color}dd)"></div>
         <div class="balloon-string"></div>
-      </div >
+      </div>
           <div class="balloon-text">Toca el globo 🎈</div>
         `;
     // Actualizar color del pseudo-element
@@ -805,11 +855,11 @@ class PageAlbum {
     const el = document.createElement('div');
     el.className = 'pa-trigger-candle';
     el.innerHTML = `
-          < div class="candle-wrap" >
+          <div class="candle-wrap">
         <div class="candle-glow"></div>
         <div class="candle-flame"></div>
         <div class="candle-body"></div>
-      </div >
+      </div>
           <div class="candle-text">Sopla la vela 🕯️</div>
         `;
     el.addEventListener('click', () => {
@@ -834,13 +884,15 @@ class PageAlbum {
   _triggerEnvelope(fromIndex, nextName, nextEmoji) {
     const el = document.createElement('div');
     el.className = 'pa-trigger-envelope';
+    const safeName = PageAlbum._escapeHTML(nextName);
+    const safeEmoji = PageAlbum._escapeHTML(nextEmoji);
     el.innerHTML = `
-          < div class="envelope-wrap" >
+          <div class="envelope-wrap">
             <div class="envelope-body">
-              <div class="envelope-card">${nextEmoji} ${nextName}</div>
+              <div class="envelope-card">${safeEmoji} ${safeName}</div>
               <div class="envelope-flap"></div>
             </div>
-      </div >
+      </div>
           <div class="envelope-text">Abre el sobre ✉️</div>
         `;
     el.addEventListener('click', () => {
@@ -860,11 +912,12 @@ class PageAlbum {
   _triggerSwipe(fromIndex, nextName) {
     const el = document.createElement('div');
     el.className = 'pa-trigger-swipe';
+    const safeName = PageAlbum._escapeHTML(nextName);
     el.innerHTML = `
-          < div class="swipe-indicator" >
-        <span class="swipe-label">Siguiente: ${nextName}</span>
+          <div class="swipe-indicator">
+        <span class="swipe-label">Siguiente: ${safeName}</span>
         <span class="swipe-arrow">→</span>
-      </div >
+      </div>
           `;
     el.addEventListener('click', () => {
       if (this._transitioning) return;
