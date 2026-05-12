@@ -56,7 +56,15 @@ window.albumData = {
       "sections": [
         {
           "type": "foto",
-          "src": "fotos/32280188_2033424063366084_9218624470200090624_n.jpg",
+          "src": "fotos/Screenshot_20260512-105708_WhatsApp.jpg",
+          "data": {
+            "texto": "",
+            "animacion": "zoom"
+          }
+        },
+        {
+          "type": "foto",
+          "src": "fotos/Screenshot_20260512-105628_WhatsApp.jpg",
           "data": {
             "texto": "",
             "animacion": "zoom"
@@ -77,7 +85,7 @@ window.albumData = {
         },
         {
           "type": "foto",
-          "src": "video/462794690_18473107447012665_1240093736178655995_n.jpg",
+          "src": "fotos/462794690_18473107447012665_1240093736178655995_n.jpg",
           "data": {
             "texto": "Que elegancia la de Francia",
             "animacion": "zoom"
@@ -86,15 +94,12 @@ window.albumData = {
         {
           "type": "collage",
           "src": [
-            "fotos/56990300_10218802706600074_5339971871779586048_n.jpg",
-            "fotos/42812295_2170697739835615_8674698193948114944_n.jpg",
             "fotos/505590630_30048694711412310_3646047630577544585_n.jpg",
-            "video/506315788_24164941306451541_7622961289018703946_n.jpg",
             "fotos/491615456_29295078976773891_6755841680322239954_n.jpg",
-            "video/514268886_30342487845366327_2221899542760691181_n.jpg"
+            "fotos/Screenshot_20260512-110316_WhatsApp.jpg"
           ],
           "data": {
-            "layout": "4",
+            "layout": "3l",
             "texto": ""
           }
         },
@@ -122,7 +127,7 @@ window.albumData = {
         },
         {
           "type": "foto",
-          "src": "video/96084751_3851357978239341_3663246124371673088_n.jpg",
+          "src": "fotos/Screenshot_20260512-110444_WhatsApp.jpg",
           "data": {
             "texto": "",
             "animacion": "zoom"
@@ -239,8 +244,8 @@ window.albumData = {
           "type": "collage",
           "src": [
             "fotos/474325674_28366293656319099_7394577190477160510_n.jpg",
-            "video/71072967_3130455320329614_4779519265747238912_n.jpg",
-            "video/71647946_3130455803662899_551449113334382592_n.jpg"
+            "fotos/71072967_3130455320329614_4779519265747238912_n.jpg",
+            "fotos/71647946_3130455803662899_551449113334382592_n.jpg"
           ],
           "data": {
             "layout": "3t",
@@ -249,7 +254,7 @@ window.albumData = {
         },
         {
           "type": "foto",
-          "src": "video/71343529_3130455700329576_7279243897635602432_n.jpg",
+          "src": "fotos/116154987_4181747885200347_2160341671682560141_n.jpg",
           "data": {
             "texto": "",
             "animacion": "zoom"
@@ -265,12 +270,13 @@ window.albumData = {
         },
         {
           "type": "foto",
-          "src": "video/509436328_30222943330654113_5275890550220217500_n.jpg",
+          "src": "fotos/509436328_30222943330654113_5275890550220217500_n.jpg",
           "data": {
             "texto": "",
             "animacion": "zoom",
             "size": "small",
-            "fit": "contain"
+            "fit": "contain",
+            "shape": "rounded"
           }
         }
       ]
@@ -288,7 +294,11 @@ window.albumData = {
           "image": "fotos/470951733_18489106534012665_2063510515264734355_n.jpg",
           "filter": "grayscale",
           "position": "center bottom"
-        }
+        },
+        "particles": {
+          "enabled": false
+        },
+        "transition": "gift"
       },
       "sections": [
         {
@@ -317,8 +327,8 @@ window.albumData = {
           "type": "collage",
           "src": [
             "fotos/470951733_18489106534012665_2063510515264734355_n.jpg",
-            "video/184677573_5552860494755739_8566173747400042675_n.jpg",
-            "video/646568688_10240098052964985_5644472928344490840_n.jpg"
+            "fotos/184677573_5552860494755739_8566173747400042675_n.jpg",
+            "fotos/646568688_10240098052964985_5644472928344490840_n.jpg"
           ],
           "data": {
             "layout": "3l",
@@ -342,7 +352,7 @@ window.albumData = {
         },
         {
           "type": "foto",
-          "src": "video/508246207_30212535721694874_5184537182900817919_n.jpg",
+          "src": "fotos/508246207_30212535721694874_5184537182900817919_n.jpg",
           "data": {
             "texto": "Nicolle 4:14",
             "animacion": "zoom",
@@ -360,7 +370,16 @@ window.albumData = {
         "music": {
           "src": "musica/Carlos Baute - Colgando en tus manos (con Marta Sanchez).mp3",
           "volume": 0.2
-        }
+        },
+        "background": {
+          "image": "fotos/476025921_18494943376012665_8655768107994791763_n.jpg",
+          "type": "image",
+          "filter": "grayscale"
+        },
+        "particles": {
+          "enabled": false
+        },
+        "transition": "envelope"
       },
       "sections": [
         {
@@ -417,7 +436,7 @@ window.albumData = {
           "src": [
             "fotos/Screenshot 2026-05-11 222724.png",
             "fotos/556863351_10240124025384033_897961162979087490_n.jpg",
-            "video/511879254_30257478663867246_3687047564316222392_n.jpg"
+            "fotos/511879254_30257478663867246_3687047564316222392_n.jpg"
           ],
           "data": {
             "layout": "3l",
@@ -440,7 +459,7 @@ window.albumData = {
           "src": [
             "fotos/514705568_30358195797128865_3977227941309501034_n.jpg",
             "fotos/482220910_28864765143138612_2189230315790648990_n.jpg",
-            "video/512136355_30267630626185383_6183326635275638471_n.jpg"
+            "fotos/97621155_3874100445965094_1627896496147922944_n.jpg"
           ],
           "data": {
             "layout": "3t",
@@ -457,6 +476,14 @@ window.albumData = {
             "fit": "contain",
             "ratio": "wide"
           }
+        },
+        {
+          "type": "foto",
+          "src": "fotos/96084751_3851357978239341_3663246124371673088_n.jpg",
+          "data": {
+            "texto": "",
+            "animacion": "zoom"
+          }
         }
       ]
     },
@@ -469,7 +496,7 @@ window.albumData = {
           "src": "musica/TU CONOCES A PIN PON (REMIX SAD).mp3"
         },
         "background": {
-          "image": "video/511307322_30234112552870524_2347001710292619426_n.jpg",
+          "image": "fotos/Screenshot 2026-05-12 033051.png",
           "type": "image",
           "filter": "none",
           "size": "cover",
@@ -503,15 +530,17 @@ window.albumData = {
           "src": "fotos/WhatsApp Image 2026-05-11 at 5.33.30 PM.jpeg",
           "data": {
             "texto": "Woww",
-            "animacion": "zoom"
+            "animacion": "zoom",
+            "shape": "circle"
           }
         },
         {
           "type": "foto",
-          "src": "video/508273152_30131859099762537_6507563391890224448_n.jpg",
+          "src": "fotos/509437871_30201639392784507_3625792836099232616_n.jpg",
           "data": {
             "texto": "",
-            "animacion": "zoom"
+            "animacion": "zoom",
+            "subtexto": "Asi la ve toda persona con altura promedio"
           }
         },
         {
@@ -525,9 +554,9 @@ window.albumData = {
         {
           "type": "collage",
           "src": [
-            "video/509357223_30227339123547867_4314411036738340232_n.jpg",
-            "video/513853812_30299916159623496_6066044611069160650_n.jpg",
-            "fotos/509437481_30216863164595463_4907361220434816951_n.jpg"
+            "fotos/513853812_30299916159623496_6066044611069160650_n.jpg",
+            "fotos/509437481_30216863164595463_4907361220434816951_n.jpg",
+            "fotos/WhatsApp Image 2026-05-11 at 5.36.16 PM (1).jpeg"
           ],
           "data": {
             "layout": "3l",
@@ -546,9 +575,9 @@ window.albumData = {
         {
           "type": "collage",
           "src": [
-            "fotos/WhatsApp Image 2026-05-11 at 5.34.06 PM.jpeg",
-            "video/508218214_30131859483095832_5143526278500257614_n.jpg",
-            "fotos/609102542_18559829392012665_5884248000404489892_n.jpg"
+            "fotos/609102542_18559829392012665_5884248000404489892_n.jpg",
+            "fotos/WhatsApp Image 2026-05-11 at 5.33.47 PM.jpeg",
+            "fotos/508218214_30131859483095832_5143526278500257614_n.jpg"
           ],
           "data": {
             "layout": "3l",
@@ -560,7 +589,8 @@ window.albumData = {
           "data": {
             "emoji": "",
             "texto": "Me diste un paraíso en los días contados, y te lo agradezco. Sería un privilegio que me rompieras el corazón.",
-            "firma": "A.W."
+            "firma": "A.W.",
+            "animacion": "scatter"
           }
         }
       ]
@@ -572,7 +602,11 @@ window.albumData = {
         "music": {
           "src": "musica/Romeo Santos - Soberbio (Audio).mp3"
         },
-        "emoji": "sol"
+        "emoji": "sol",
+        "background": {
+          "image": "fotos/559227738_18542641978012665_3123408175709787224_n.jpg",
+          "type": "image"
+        }
       },
       "sections": [
         {
@@ -609,6 +643,17 @@ window.albumData = {
             "ratio": "wide",
             "fit": "contain"
           }
+        },
+        {
+          "type": "foto",
+          "src": "fotos/509604854_30198439786437801_6544489734776061322_n.jpg",
+          "data": {
+            "texto": "II Nicolle 6:7",
+            "animacion": "zoom",
+            "fit": "contain",
+            "shape": "pill",
+            "ratio": "square"
+          }
         }
       ]
     },
@@ -634,30 +679,31 @@ window.albumData = {
         },
         {
           "type": "foto",
+          "src": "fotos/511138793_30267570112858101_9097302426005497665_n.jpg",
+          "data": {
+            "texto": "WOW",
+            "animacion": "zoom"
+          }
+        },
+        {
+          "type": "foto",
           "src": "fotos/512676330_30279303738351405_4468303791206868802_n.jpg",
           "data": {
             "texto": "",
-            "animacion": "zoom"
+            "animacion": "zoom",
+            "subtexto": "Me hubieras avisado y habriamos tendriamos una linda foto"
           }
         },
         {
           "type": "collage",
           "src": [
-            "video/514478932_30340439095571202_8959593691105627309_n.jpg",
+            "fotos/WhatsApp Image 2026-05-11 at 5.34.06 PM.jpeg",
             "fotos/471539406_10234498491939459_5550578616543550742_n (1).jpg",
             "fotos/556123873_25032542383006796_1224499742471696686_n.jpg"
           ],
           "data": {
             "layout": "3l",
             "texto": ""
-          }
-        },
-        {
-          "type": "foto",
-          "src": "fotos/511138793_30267570112858101_9097302426005497665_n.jpg",
-          "data": {
-            "texto": "wow",
-            "animacion": "zoom"
           }
         },
         {
@@ -679,7 +725,8 @@ window.albumData = {
           ],
           "data": {
             "layout": "3l",
-            "texto": ""
+            "texto": "Rubia, Morena y Peliroja",
+            "subtexto": "Sique siendo igual de mongola"
           }
         }
       ]
@@ -692,9 +739,9 @@ window.albumData = {
           "src": "musica/Feliz Cumpleaños HBD.mp3"
         },
         "background": {
-          "image": "video/97621155_3874100445965094_1627896496147922944_n.jpg",
+          "image": "fotos/Screenshot_20260512-110444_WhatsApp.jpg",
           "type": "image",
-          "filter": "grayscale",
+          "filter": "none",
           "size": "cover"
         },
         "emoji": "Aniversarios"
