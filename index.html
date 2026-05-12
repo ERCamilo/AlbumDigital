@@ -1,0 +1,2327 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>🎂 Álbum de Cumpleaños</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Pacifico&family=Nunito:ital,wght@0,400;0,700;0,900;1,400&display=swap"
+    rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <style>
+    /* ─── VARIABLES ─── */
+    :root {
+      --gold: #f9c846;
+      --purple: #a855f7;
+      --pink: #f472b6;
+      --teal: #2dd4bf;
+      --orange: #fb923c;
+      --green: #4ade80;
+      --blue: #60a5fa;
+      --text: #f0e6ff;
+      --radius: 18px;
+    }
+
+    *,
+    *::before,
+    *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    /* ─── FONDO ANIMADO ─── */
+    body {
+      font-family: 'Nunito', sans-serif;
+      background: linear-gradient(-45deg, #0f172a, #1e1b4b, #3b0764, #0f172a);
+      background-size: 400% 400%;
+      animation: bgMove 18s ease infinite;
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    @keyframes bgMove {
+
+      0%,
+      100% {
+        background-position: 0% 50%
+      }
+
+      50% {
+        background-position: 100% 50%
+      }
+    }
+
+    #bg-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    #album-root {
+      position: relative;
+      z-index: 2;
+      max-width: 460px;
+      margin: 0 auto;
+      padding: 0 16px 80px;
+    }
+
+    /* ══════════════════════════════════
+   HERO
+══════════════════════════════════ */
+    .hero-section {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 60px 10px;
+      position: relative;
+    }
+
+    .hero-rings::before,
+    .hero-rings::after {
+      content: '';
+      position: absolute;
+      border-radius: 50%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      animation: ringPulse 4s ease-in-out infinite;
+    }
+
+    .hero-rings::before {
+      width: 280px;
+      height: 280px;
+      border: 1px solid rgba(168, 85, 247, .2);
+    }
+
+    .hero-rings::after {
+      width: 480px;
+      height: 480px;
+      border: 1px solid rgba(168, 85, 247, .08);
+      animation-delay: 1.2s;
+    }
+
+    @keyframes ringPulse {
+
+      0%,
+      100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: .5
+      }
+
+      50% {
+        transform: translate(-50%, -50%) scale(1.1);
+        opacity: 1
+      }
+    }
+
+    .hero-photo-ring {
+      width: 160px;
+      height: 160px;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 4px solid var(--gold);
+      box-shadow: 0 0 0 8px rgba(249, 200, 70, .15), 0 0 40px rgba(249, 200, 70, .35);
+      margin-bottom: 22px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-photo-ring img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .hero-photo-ring .ph {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #2d1b69, #7c3aed);
+      font-size: 55px;
+    }
+
+    .hero-emoji {
+      font-size: 50px;
+      margin-bottom: 6px;
+      animation: bounce 1.3s ease-in-out infinite;
+      position: relative;
+      z-index: 1;
+    }
+
+    @keyframes bounce {
+
+      0%,
+      100% {
+        transform: translateY(0)
+      }
+
+      50% {
+        transform: translateY(-14px)
+      }
+    }
+
+    .hero-tag {
+      font-size: 11px;
+      letter-spacing: 5px;
+      text-transform: uppercase;
+      color: var(--teal);
+      margin-bottom: 6px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-title {
+      font-family: 'Pacifico', cursive;
+      font-size: clamp(40px, 12vw, 72px);
+      line-height: 1.1;
+      background: linear-gradient(135deg, var(--gold) 0%, var(--orange) 40%, var(--pink) 80%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 0 24px rgba(249, 200, 70, .4));
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-name {
+      font-family: 'Pacifico', cursive;
+      font-size: clamp(28px, 8vw, 52px);
+      color: #fff;
+      text-shadow: 0 0 20px rgba(168, 85, 247, .9), 0 0 60px rgba(168, 85, 247, .4);
+      margin-top: 4px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-subtitle {
+      font-style: italic;
+      font-size: clamp(13px, 4vw, 16px);
+      color: rgba(240, 230, 255, .7);
+      background: rgba(255, 255, 255, .08);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, .12);
+      border-radius: 16px;
+      padding: 12px 22px;
+      max-width: 300px;
+      line-height: 1.8;
+      margin-top: 18px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .scroll-cue {
+      margin-top: 40px;
+      font-size: 11px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, .3);
+      position: relative;
+      z-index: 1;
+      animation: nudge 2s 1.5s ease-in-out infinite;
+    }
+
+    @keyframes nudge {
+
+      0%,
+      100% {
+        transform: translateY(0)
+      }
+
+      50% {
+        transform: translateY(8px)
+      }
+    }
+
+    /* ══════════════════════════════════
+   SECCIÓN GENÉRICA
+   Las secciones son siempre visibles;
+   el CONTENIDO interno es el que anima.
+══════════════════════════════════ */
+    .album-section {
+      min-height: auto;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 20px 0;
+      width: 100%;
+    }
+
+    /* ── El contenido (.anim-target) empieza invisible ── */
+    .anim-target {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    /* ══════════════════════════════════
+   KEYFRAMES DE ANIMACIÓN
+══════════════════════════════════ */
+    @keyframes aniZoomIn {
+      from {
+        opacity: 0;
+        transform: scale(.25)
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1)
+      }
+    }
+
+    @keyframes aniZoomOut {
+      from {
+        opacity: 0;
+        transform: scale(1.7)
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1)
+      }
+    }
+
+    @keyframes aniSlideL {
+      from {
+        opacity: 0;
+        transform: translateX(-100px)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0)
+      }
+    }
+
+    @keyframes aniSlideR {
+      from {
+        opacity: 0;
+        transform: translateX(100px)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0)
+      }
+    }
+
+    @keyframes aniSlideUp {
+      from {
+        opacity: 0;
+        transform: translateY(80px)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0)
+      }
+    }
+
+    @keyframes aniSlideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-80px)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0)
+      }
+    }
+
+    @keyframes aniBounce {
+      0% {
+        opacity: 0;
+        transform: translateY(-90px)
+      }
+
+      55% {
+        opacity: 1;
+        transform: translateY(14px)
+      }
+
+      75% {
+        transform: translateY(-7px)
+      }
+
+      90% {
+        transform: translateY(4px)
+      }
+
+      100% {
+        opacity: 1;
+        transform: translateY(0)
+      }
+    }
+
+    @keyframes aniRotate {
+      from {
+        opacity: 0;
+        transform: rotate(-16deg) scale(.6)
+      }
+
+      to {
+        opacity: 1;
+        transform: rotate(0) scale(1)
+      }
+    }
+
+    @keyframes aniFlip {
+      from {
+        opacity: 0;
+        transform: rotateY(90deg)
+      }
+
+      to {
+        opacity: 1;
+        transform: rotateY(0)
+      }
+    }
+
+    @keyframes aniFlipY {
+      from {
+        opacity: 0;
+        transform: rotateX(90deg)
+      }
+
+      to {
+        opacity: 1;
+        transform: rotateX(0)
+      }
+    }
+
+    @keyframes aniFadeBlur {
+      from {
+        opacity: 0;
+        filter: blur(18px)
+      }
+
+      to {
+        opacity: 1;
+        filter: blur(0)
+      }
+    }
+
+    @keyframes aniElastic {
+      0% {
+        opacity: 0;
+        transform: scale(0)
+      }
+
+      50% {
+        opacity: 1;
+        transform: scale(1.18)
+      }
+
+      70% {
+        transform: scale(.9)
+      }
+
+      85% {
+        transform: scale(1.05)
+      }
+
+      100% {
+        opacity: 1;
+        transform: scale(1)
+      }
+    }
+
+    @keyframes aniSwing {
+      0% {
+        opacity: 0;
+        transform: rotate(-22deg) translateX(-50px)
+      }
+
+      100% {
+        opacity: 1;
+        transform: rotate(0) translateX(0)
+      }
+    }
+
+    @keyframes aniSpiral {
+      0% {
+        opacity: 0;
+        transform: rotate(-360deg) scale(0)
+      }
+
+      100% {
+        opacity: 1;
+        transform: rotate(0) scale(1)
+      }
+    }
+
+    @keyframes aniFade {
+      from {
+        opacity: 0;
+        transform: translateY(35px)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0)
+      }
+    }
+
+    @keyframes aniPop {
+      0% {
+        opacity: 0;
+        transform: scale(0) rotate(-6deg)
+      }
+
+      70% {
+        transform: scale(1.08) rotate(1deg)
+      }
+
+      100% {
+        opacity: 1;
+        transform: scale(1) rotate(0)
+      }
+    }
+
+    /* ── Animaciones activadas por clase .revealed ── */
+    .anim-target.revealed[data-anim="zoom"] {
+      animation: aniZoomIn .85s cubic-bezier(.34, 1.5, .64, 1) both;
+    }
+
+    .anim-target.revealed[data-anim="zoom-out"] {
+      animation: aniZoomOut .85s ease both;
+    }
+
+    .anim-target.revealed[data-anim="slide-left"] {
+      animation: aniSlideL .75s cubic-bezier(.25, .46, .45, .94) both;
+    }
+
+    .anim-target.revealed[data-anim="slide-right"] {
+      animation: aniSlideR .75s cubic-bezier(.25, .46, .45, .94) both;
+    }
+
+    .anim-target.revealed[data-anim="slide-up"] {
+      animation: aniSlideUp .75s cubic-bezier(.25, .46, .45, .94) both;
+    }
+
+    .anim-target.revealed[data-anim="slide-down"] {
+      animation: aniSlideDown .75s ease both;
+    }
+
+    .anim-target.revealed[data-anim="bounce"] {
+      animation: aniBounce 1s ease both;
+    }
+
+    .anim-target.revealed[data-anim="rotate"] {
+      animation: aniRotate .9s cubic-bezier(.34, 1.5, .64, 1) both;
+    }
+
+    .anim-target.revealed[data-anim="flip"] {
+      animation: aniFlip .9s ease both;
+    }
+
+    .anim-target.revealed[data-anim="flip-y"] {
+      animation: aniFlipY .9s ease both;
+    }
+
+    .anim-target.revealed[data-anim="fade-blur"] {
+      animation: aniFadeBlur 1s ease both;
+    }
+
+    .anim-target.revealed[data-anim="elastic"] {
+      animation: aniElastic 1.1s ease both;
+    }
+
+    .anim-target.revealed[data-anim="swing"] {
+      animation: aniSwing .9s cubic-bezier(.34, 1.5, .64, 1) both;
+    }
+
+    .anim-target.revealed[data-anim="spiral"] {
+      animation: aniSpiral 1.1s ease both;
+    }
+
+    .anim-target.revealed[data-anim="fade"] {
+      animation: aniFade .8s ease both;
+    }
+
+    /* ── Hijos invisibles ANTES de que el padre reciba .revealed ── */
+    .anim-target[data-anim="pop"] .col-cell,
+    .anim-target[data-anim="stagger"] .col-cell,
+    .anim-target[data-anim="stagger"] .wish-item,
+    .anim-target[data-anim="stagger"] .stat-box,
+    .anim-target[data-anim="scatter"] .scatter-item {
+      opacity: 1;
+    }
+
+    /* ── Padre visible inmediatamente para animaciones de hijos ── */
+    .anim-target.revealed[data-anim="pop"],
+    .anim-target.revealed[data-anim="stagger"],
+    .anim-target.revealed[data-anim="scatter"] {
+      opacity: 1;
+    }
+
+    /* ── Una vez revelado, la animación restaura la opacidad ── */
+    /* pop (collage) */
+    .anim-target.revealed[data-anim="pop"] .col-cell {
+      animation: aniPop .65s cubic-bezier(.34, 1.5, .64, 1) both;
+    }
+
+    .anim-target.revealed[data-anim="pop"] .col-cell:nth-child(1) {
+      animation-delay: .00s
+    }
+
+    .anim-target.revealed[data-anim="pop"] .col-cell:nth-child(2) {
+      animation-delay: .12s
+    }
+
+    .anim-target.revealed[data-anim="pop"] .col-cell:nth-child(3) {
+      animation-delay: .22s
+    }
+
+    .anim-target.revealed[data-anim="pop"] .col-cell:nth-child(4) {
+      animation-delay: .32s
+    }
+
+    .anim-target.revealed[data-anim="pop"] .col-cell:nth-child(5) {
+      animation-delay: .42s
+    }
+
+    /* stagger (listas, stats) */
+    .anim-target.revealed[data-anim="stagger"] .col-cell,
+    .anim-target.revealed[data-anim="stagger"] .wish-item,
+    .anim-target.revealed[data-anim="stagger"] .stat-box {
+      animation: aniSlideUp .6s ease both;
+    }
+
+    .anim-target.revealed[data-anim="stagger"] .col-cell:nth-child(1),
+    .anim-target.revealed[data-anim="stagger"] .wish-item:nth-child(1),
+    .anim-target.revealed[data-anim="stagger"] .stat-box:nth-child(1) {
+      animation-delay: .00s
+    }
+
+    .anim-target.revealed[data-anim="stagger"] .col-cell:nth-child(2),
+    .anim-target.revealed[data-anim="stagger"] .wish-item:nth-child(2),
+    .anim-target.revealed[data-anim="stagger"] .stat-box:nth-child(2) {
+      animation-delay: .09s
+    }
+
+    .anim-target.revealed[data-anim="stagger"] .col-cell:nth-child(3),
+    .anim-target.revealed[data-anim="stagger"] .wish-item:nth-child(3),
+    .anim-target.revealed[data-anim="stagger"] .stat-box:nth-child(3) {
+      animation-delay: .18s
+    }
+
+    .anim-target.revealed[data-anim="stagger"] .col-cell:nth-child(4),
+    .anim-target.revealed[data-anim="stagger"] .wish-item:nth-child(4),
+    .anim-target.revealed[data-anim="stagger"] .stat-box:nth-child(4) {
+      animation-delay: .27s
+    }
+
+    .anim-target.revealed[data-anim="stagger"] .col-cell:nth-child(5),
+    .anim-target.revealed[data-anim="stagger"] .wish-item:nth-child(5),
+    .anim-target.revealed[data-anim="stagger"] .stat-box:nth-child(5) {
+      animation-delay: .36s
+    }
+
+    .anim-target.revealed[data-anim="stagger"] .col-cell:nth-child(6),
+    .anim-target.revealed[data-anim="stagger"] .wish-item:nth-child(6),
+    .anim-target.revealed[data-anim="stagger"] .stat-box:nth-child(6) {
+      animation-delay: .45s
+    }
+
+    /* scatter */
+    .anim-target.revealed[data-anim="scatter"] .scatter-item {
+      animation: aniSlideUp .85s cubic-bezier(.34, 1.3, .64, 1) both;
+    }
+
+    .anim-target.revealed[data-anim="scatter"] .scatter-item:nth-child(1) {
+      animation-delay: .00s
+    }
+
+    .anim-target.revealed[data-anim="scatter"] .scatter-item:nth-child(2) {
+      animation-delay: .18s
+    }
+
+    .anim-target.revealed[data-anim="scatter"] .scatter-item:nth-child(3) {
+      animation-delay: .32s
+    }
+
+    .anim-target.revealed[data-anim="scatter"] .scatter-item:nth-child(4) {
+      animation-delay: .46s
+    }
+
+    /* headings y footer */
+    .sec-heading {
+      opacity: 1;
+    }
+
+    .album-footer {
+      opacity: 1;
+    }
+
+    .sec-heading.revealed {
+      animation: aniFade .7s ease both;
+    }
+
+    .album-footer.revealed {
+      animation: aniFade 1s ease both;
+    }
+
+    /* ══════════════════════════════════
+   MARCO DE FOTO
+══════════════════════════════════ */
+    .photo-frame {
+      border-radius: var(--radius);
+      padding: 6px;
+      background: linear-gradient(45deg, var(--gold), var(--pink), var(--purple), var(--gold));
+      background-size: 300% 300%;
+      animation: borderAnim 5s linear infinite;
+      box-shadow: 0 12px 35px rgba(0, 0, 0, .5);
+      width: 100%;
+    }
+
+    @keyframes borderAnim {
+
+      0%,
+      100% {
+        background-position: 0% 50%
+      }
+
+      50% {
+        background-position: 100% 50%
+      }
+    }
+
+    .photo-frame img,
+    .photo-frame video {
+      border-radius: calc(var(--radius) - 4px);
+      display: block;
+      width: 100%;
+      height: auto;
+      object-fit: cover;
+    }
+
+    .photo-frame.ratio-sq img {
+      aspect-ratio: 1/1;
+      object-fit: cover;
+    }
+
+    .photo-frame.ratio-4x5 img {
+      aspect-ratio: 4/5;
+      object-fit: cover;
+    }
+
+    .photo-frame.ratio-16x9 img {
+      aspect-ratio: 16/9;
+      object-fit: cover;
+    }
+
+    .photo-frame.ratio-16x9 video {
+      aspect-ratio: 16/9;
+      object-fit: cover;
+    }
+
+    /* ── Separador / Títulos ── */
+    .album-divider {
+      text-align: center;
+      font-size: 22px;
+      letter-spacing: 8px;
+      opacity: .6;
+      padding: 4px 0;
+      animation: floatDiv 3s ease-in-out infinite;
+    }
+
+    @keyframes floatDiv {
+
+      0%,
+      100% {
+        transform: translateY(0)
+      }
+
+      50% {
+        transform: translateY(-8px)
+      }
+    }
+
+    .sec-title {
+      font-family: 'Pacifico', cursive;
+      font-size: clamp(24px, 7vw, 36px);
+      margin-bottom: 8px;
+      text-align: center;
+    }
+
+    .sec-label {
+      font-size: 11px;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: var(--teal);
+      margin-bottom: 6px;
+      text-align: center;
+    }
+
+    /* ══════════════════════════════════
+   COLLAGES
+══════════════════════════════════ */
+    .collage-wrap {
+      width: 100%;
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .collage-2h {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+    }
+
+    .collage-3t {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+    }
+
+    .collage-3t .col-main {
+      grid-column: 1/-1;
+    }
+
+    .collage-3l {
+      display: grid;
+      grid-template-columns: 1fr 1.5fr;
+      grid-template-rows: 1fr 1fr;
+      gap: 4px;
+    }
+
+    .collage-3l .col-main {
+      grid-column: 2;
+      grid-row: 1/-1;
+    }
+
+    .collage-4 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+    }
+
+    .collage-5m {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: 1fr 1fr;
+      gap: 4px;
+    }
+
+    .collage-5m .col-main {
+      grid-column: 1/3;
+    }
+
+    .col-cell {
+      overflow: hidden;
+      position: relative;
+      background: #1e1040;
+      min-height: 100px;
+    }
+
+    .col-cell img,
+    .col-cell video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform .5s;
+    }
+
+    .col-cell:hover img {
+      transform: scale(1.06);
+    }
+
+    .col-cell .ph {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      opacity: .3;
+    }
+
+    .col-cell .ph-icon {
+      font-size: 28px;
+      opacity: .4;
+    }
+
+    .collage-2h .col-cell {
+      aspect-ratio: 4/5;
+    }
+
+    .collage-3t .col-cell {
+      aspect-ratio: 4/3;
+    }
+
+    .collage-3t .col-main {
+      aspect-ratio: 16/9;
+    }
+
+    .collage-3l .col-cell {
+      aspect-ratio: 1/1;
+    }
+
+    .collage-3l .col-main {
+      aspect-ratio: 3/4;
+    }
+
+    .collage-4 .col-cell {
+      aspect-ratio: 1/1;
+    }
+
+    .collage-5m .col-cell {
+      aspect-ratio: 1/1;
+    }
+
+    .collage-5m .col-main {
+      aspect-ratio: 16/9;
+    }
+
+    /* ─── Scatter ─── */
+    .scatter-container {
+      position: relative;
+      height: 420px;
+      width: 100%;
+    }
+
+    .scatter-item {
+      position: absolute;
+      width: 52%;
+      border-radius: var(--radius);
+      padding: 5px;
+      background: linear-gradient(45deg, var(--gold), var(--pink), var(--purple), var(--gold));
+      background-size: 300% 300%;
+      animation: borderAnim 5s linear infinite;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, .5);
+    }
+
+    .scatter-item img {
+      border-radius: calc(var(--radius) - 3px);
+      width: 100%;
+      display: block;
+    }
+
+    /* ─── Carousel ─── */
+    .collage-carousel {
+      display: flex;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      gap: 12px;
+      padding-bottom: 12px;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, .3) transparent;
+    }
+
+    .collage-carousel::-webkit-scrollbar {
+      height: 6px;
+    }
+
+    .collage-carousel::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, .3);
+      border-radius: 6px;
+    }
+
+    .collage-carousel .col-cell {
+      flex: 0 0 85%;
+      max-width: 320px;
+      scroll-snap-align: center;
+      aspect-ratio: 4/5;
+    }
+
+    /* ─── Footer del collage / foto ─── */
+    .collage-footer {
+      width: 100%;
+      background: linear-gradient(to right, rgba(168, 85, 247, .1), rgba(244, 114, 182, .1));
+      border: 1px solid rgba(255, 255, 255, .1);
+      border-top: none;
+      border-radius: 0 0 var(--radius) var(--radius);
+      padding: 12px 16px;
+    }
+
+    /* Fila superior: título + botón play */
+    .collage-footer-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .col-caption {
+      font-family: 'Pacifico', cursive;
+      font-size: 18px;
+      color: #fff;
+    }
+
+    .col-sub {
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-top: 3px;
+      opacity: .85;
+    }
+
+    /* Botón play/pausa mini en el título del collage */
+    .collage-play-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: none;
+      cursor: pointer;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      background: linear-gradient(135deg, var(--purple), var(--pink));
+      box-shadow: 0 3px 12px rgba(168, 85, 247, .5);
+      transition: transform .2s, box-shadow .3s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .collage-play-btn:active {
+      transform: scale(.87);
+    }
+
+    .collage-play-btn.playing {
+      animation: btnPulse 1.8s ease-in-out infinite;
+    }
+
+    @keyframes btnPulse {
+
+      0%,
+      100% {
+        box-shadow: 0 3px 14px rgba(168, 85, 247, .7), 0 0 0 0 rgba(168, 85, 247, .3)
+      }
+
+      50% {
+        box-shadow: 0 3px 14px rgba(168, 85, 247, .7), 0 0 0 8px rgba(168, 85, 247, 0)
+      }
+    }
+
+    /* ══════════════════════════════════
+   MENSAJE / DESEOS / STATS
+══════════════════════════════════ */
+    .msg-card {
+      width: 100%;
+      background: rgba(255, 255, 255, .07);
+      backdrop-filter: blur(10px);
+      border: 2px dashed rgba(244, 114, 182, .5);
+      border-radius: var(--radius);
+      padding: 32px 22px;
+      text-align: center;
+    }
+
+    .msg-emoji {
+      font-size: 44px;
+      display: block;
+      margin-bottom: 14px;
+    }
+
+    .msg-text {
+      font-family: 'Pacifico', cursive;
+      font-size: clamp(16px, 5vw, 22px);
+      color: rgba(255, 240, 255, .9);
+      line-height: 1.8;
+    }
+
+    .msg-sign {
+      font-family: 'Pacifico', cursive;
+      font-size: 22px;
+      color: var(--gold);
+      margin-top: 18px;
+      text-shadow: 0 0 12px rgba(249, 200, 70, .5);
+    }
+
+    .wish-list {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .wish-item {
+      background: rgba(255, 255, 255, .06);
+      border: 1px solid rgba(255, 255, 255, .1);
+      border-radius: 14px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 15px;
+    }
+
+    .wish-icon {
+      font-size: 22px;
+      flex-shrink: 0;
+    }
+
+    .stats-grid {
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .stat-box {
+      background: rgba(255, 255, 255, .06);
+      border: 1px solid rgba(255, 255, 255, .1);
+      border-radius: 16px;
+      padding: 16px 8px;
+      text-align: center;
+    }
+
+    .stat-num {
+      font-family: 'Pacifico', cursive;
+      font-size: 26px;
+      background: linear-gradient(135deg, var(--gold), var(--orange));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .stat-lbl {
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: rgba(240, 230, 255, .5);
+      margin-top: 4px;
+    }
+
+    /* ══════════════════════════════════
+   FOOTER
+══════════════════════════════════ */
+    .album-footer {
+      text-align: center;
+      padding: 60px 20px;
+      background: linear-gradient(to top, rgba(168, 85, 247, .18), transparent);
+      position: relative;
+      z-index: 10;
+    }
+
+    .footer-title {
+      font-family: 'Pacifico', cursive;
+      font-size: clamp(32px, 10vw, 58px);
+      background: linear-gradient(135deg, var(--gold), var(--orange), var(--pink));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: pulseGlow 2.5s ease-in-out infinite alternate;
+    }
+
+    @keyframes pulseGlow {
+      from {
+        filter: drop-shadow(0 0 10px rgba(249, 200, 70, .3))
+      }
+
+      to {
+        filter: drop-shadow(0 0 40px rgba(249, 200, 70, .8))
+      }
+    }
+
+    .footer-sub {
+      color: rgba(255, 255, 255, .35);
+      font-size: 11px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-top: 8px;
+    }
+
+    .footer-emojis {
+      font-size: 28px;
+      letter-spacing: 8px;
+      margin-top: 20px;
+      animation: bounce 1.5s ease-in-out infinite;
+    }
+
+    /* ── Sparkle ── */
+    @keyframes tSpark {
+      0% {
+        opacity: 1;
+        transform: scale(.4) translateY(0)
+      }
+
+      100% {
+        opacity: 0;
+        transform: scale(1.6) translateY(-55px)
+      }
+    }
+
+    /* ══════════════════════════════════
+   REPRODUCTOR DE AUDIO
+══════════════════════════════════ */
+    .audio-card {
+      width: 100%;
+      background: rgba(255, 255, 255, .07);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, .15);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      margin-top: 14px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, .3);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .audio-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 20% 50%, rgba(168, 85, 247, .15) 0%, transparent 60%);
+      opacity: 0;
+      transition: opacity .5s;
+      pointer-events: none;
+    }
+
+    .audio-card.playing::before {
+      opacity: 1;
+    }
+
+    .audio-btn {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+      background: linear-gradient(135deg, var(--purple), var(--pink));
+      box-shadow: 0 4px 16px rgba(168, 85, 247, .5);
+      transition: transform .2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .audio-btn:active {
+      transform: scale(.9);
+    }
+
+    .audio-btn.playing {
+      animation: btnPulse 1.8s ease-in-out infinite;
+    }
+
+    .audio-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .audio-title {
+      font-family: 'Pacifico', cursive;
+      font-size: 15px;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .audio-artist {
+      font-size: 11px;
+      color: rgba(240, 230, 255, .5);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    .audio-progress-wrap {
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .audio-bar-bg {
+      flex: 1;
+      height: 4px;
+      background: rgba(255, 255, 255, .12);
+      border-radius: 4px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .audio-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--purple), var(--pink));
+      border-radius: 4px;
+      width: 0%;
+      transition: width .3s linear;
+      pointer-events: none;
+    }
+
+    .audio-time {
+      font-size: 10px;
+      color: rgba(240, 230, 255, .4);
+      letter-spacing: 1px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .audio-volume {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .audio-vol-icon {
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .audio-vol-slider {
+      flex: 1;
+      height: 3px;
+      -webkit-appearance: none;
+      appearance: none;
+      background: rgba(255, 255, 255, .15);
+      border-radius: 3px;
+      cursor: pointer;
+      outline: none;
+    }
+
+    .audio-vol-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--purple), var(--pink));
+      box-shadow: 0 0 6px rgba(168, 85, 247, .6);
+    }
+
+    .audio-waves {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      height: 28px;
+      flex-shrink: 0;
+    }
+
+    .audio-waves span {
+      display: block;
+      width: 3px;
+      height: 6px;
+      border-radius: 3px;
+      background: linear-gradient(to top, var(--purple), var(--pink));
+    }
+
+    .audio-card.playing .audio-waves span:nth-child(1) {
+      animation: wave 1s .00s ease-in-out infinite alternate
+    }
+
+    .audio-card.playing .audio-waves span:nth-child(2) {
+      animation: wave 1s .20s ease-in-out infinite alternate
+    }
+
+    .audio-card.playing .audio-waves span:nth-child(3) {
+      animation: wave 1s .10s ease-in-out infinite alternate
+    }
+
+    .audio-card.playing .audio-waves span:nth-child(4) {
+      animation: wave 1s .30s ease-in-out infinite alternate
+    }
+
+    .audio-card.playing .audio-waves span:nth-child(5) {
+      animation: wave 1s .15s ease-in-out infinite alternate
+    }
+
+    @keyframes wave {
+      from {
+        height: 5px
+      }
+
+      to {
+        height: 22px
+      }
+    }
+
+    /* Toast */
+    #audio-toast {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: rgba(20, 10, 40, .92);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(168, 85, 247, .3);
+      border-radius: 30px;
+      padding: 10px 20px;
+      font-size: 13px;
+      color: #fff;
+      white-space: nowrap;
+      z-index: 9000;
+      opacity: 0;
+      transition: opacity .4s, transform .4s;
+      pointer-events: none;
+    }
+
+    #audio-toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* Mini botón flotante */
+    #audio-mini {
+      position: fixed;
+      bottom: 20px;
+      right: 16px;
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--purple), var(--pink));
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      box-shadow: 0 4px 20px rgba(168, 85, 247, .6);
+      z-index: 8000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .3s, transform .3s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    #audio-mini.visible {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    #audio-mini.playing {
+      animation: btnPulse 1.8s ease-in-out infinite;
+    }
+
+    /* Placeholder */
+    .ph {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      min-height: 180px;
+      opacity: .3;
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .ph-icon {
+      font-size: 36px;
+      opacity: .5;
+    }
+
+    .pa-screen.active .pa-screen-header,
+    .pa-screen.active .pa-screen-content,
+    .pa-screen.active .album-section,
+    .pa-screen.active .anim-target,
+    .pa-screen.active .col-cell,
+    .pa-screen.active .wish-item,
+    .pa-screen.active .stat-box,
+    .pa-screen.active .scatter-item,
+    .pa-screen.active .sec-heading,
+    .pa-screen.active .album-footer {
+      opacity: 1 !important;
+      visibility: visible !important;
+      position: relative;
+      z-index: 5;
+    }
+  </style>
+</head>
+
+<body>
+
+  <canvas id="bg-canvas"></canvas>
+  <main id="album-root"></main>
+  <div id="audio-toast">🎵</div>
+  <button id="audio-mini" title="Play / Pausa">▶</button>
+
+  <script src="app.js?v=editor-preview-2"></script>
+  <script src="album-data.js?v=editor-preview-2"></script>
+  <script>
+    let currentAlbumData = window.albumData || null;
+
+    /* Particulas de fondo */
+    (function () {
+      const cv = document.getElementById('bg-canvas'), ctx = cv.getContext('2d');
+      let w, h;
+      const defaults = ['💖', '✨', '⭐', '🎊', '🎈', '💫', '🎉', '🌸'];
+      const resize = () => { w = cv.width = innerWidth; h = cv.height = innerHeight; };
+      window.addEventListener('resize', resize); resize();
+      function activeParticleConfig() {
+        const idx = window.activeAlbumInstance ? window.activeAlbumInstance._currentIndex : 0;
+        const opts = currentAlbumData?.screens?.[idx]?.opts?.particles || {};
+        return {
+          enabled: opts.enabled !== false,
+          icons: String(opts.icons || defaults.join(' ')).split(/\s+/).filter(Boolean),
+          count: Math.max(0, Math.min(120, Number(opts.count ?? 30))),
+          speed: Math.max(.1, Math.min(3, Number(opts.speed ?? 1))),
+          opacity: Math.max(.02, Math.min(1, Number(opts.opacity ?? .35)))
+        };
+      }
+      class P {
+        constructor() { this.reset(); this.y = Math.random() * h; }
+        reset() { const cfg = activeParticleConfig(); const icons = cfg.icons.length ? cfg.icons : defaults; this.x = Math.random() * w; this.y = -25; this.s = Math.random() * 14 + 8; this.v = (Math.random() * .8 + .35) * cfg.speed; this.c = icons[Math.floor(Math.random() * icons.length)]; this.o = Math.random() * cfg.opacity + .08; }
+        update() { const cfg = activeParticleConfig(); this.y += this.v * cfg.speed; if (this.y > h) this.reset(); }
+        draw() { ctx.globalAlpha = this.o; ctx.font = `${this.s}px Arial`; ctx.fillText(this.c, this.x, this.y); }
+      }
+      const ps = Array.from({ length: 120 }, () => new P());
+      (function loop() {
+        const cfg = activeParticleConfig();
+        ctx.clearRect(0, 0, w, h);
+        if (cfg.enabled) ps.slice(0, cfg.count).forEach(p => { p.update(); p.draw(); });
+        requestAnimationFrame(loop);
+      })();
+    })();
+
+    /* Confetti */    const CC = ['#f9c846', '#a855f7', '#f472b6', '#2dd4bf', '#fb923c', '#4ade80', '#60a5fa'];
+    function burstAt(x, y, n = 60) { confetti({ particleCount: n, spread: 70, origin: { x: x / innerWidth, y: y / innerHeight }, colors: CC, shapes: ['circle', 'square'], gravity: 1.2, scalar: .9 }); }
+    function fullBurst(n = 180) { confetti({ particleCount: n, spread: 160, origin: { x: .5, y: .3 }, colors: CC, shapes: ['circle', 'square', 'star'], gravity: 1.1, scalar: .85 }); }
+
+    /* ════════════════════════════════════════════════════
+       MOTOR DE ANIMACIÓN — IntersectionObserver
+       · Observa el .anim-target directamente (no la sección)
+       · rootMargin generoso para que dispare con facilidad
+       · Fallback: si tras 3s el elemento aún no se reveló,
+         lo muestra igual (nunca queda invisible)
+    ════════════════════════════════════════════════════ */
+    const _animIO = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (!e.isIntersecting) return;
+        const target = e.target;
+        // Only reveal if parent screen is active
+        const parentScreen = target.closest('.pa-screen');
+        if (parentScreen && !parentScreen.classList.contains('active')) return;
+        reveal(target);
+        _animIO.unobserve(target);
+      });
+    }, {
+      threshold: 0,
+      rootMargin: '0px 0px -8% 0px'
+    });
+
+    let _revealCount = 0;
+    function reveal(target) {
+      if (target.classList.contains('revealed')) return;
+      target.classList.add('revealed');
+      _revealCount++;
+      if (_revealCount % 3 === 1) {
+        const r = target.getBoundingClientRect();
+        if (r.width > 0 && r.height > 0) {
+          burstAt(r.left + r.width / 2, r.top + r.height / 2, 25);
+        }
+      }
+    }
+
+    const _headIO = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (!e.isIntersecting) return;
+        const parentScreen = e.target.closest('.pa-screen');
+        if (parentScreen && !parentScreen.classList.contains('active')) return;
+        e.target.classList.add('revealed');
+        _headIO.unobserve(e.target);
+      });
+    }, { threshold: 0, rootMargin: '0px 0px -5% 0px' });
+
+    function attachAnim(section, animKey, audioOpts = null) {
+      const target = section.querySelector('.anim-target');
+      if (target) {
+        target.setAttribute('data-anim', animKey || 'slide-up');
+        // Don't observe immediately; wait for the screen to become active
+        // Elements on the first active screen will be observed via observeActiveScreen()
+      }
+
+      if (audioOpts && audioOpts.src && audioOpts.src.trim() !== '') {
+        AudioEngine.register(section, audioOpts);
+      }
+    }
+
+    // Observe only targets inside the active screen
+    function observeActiveScreen() {
+      const activeScreen = document.querySelector('.pa-screen.active');
+      if (!activeScreen) return;
+      activeScreen.querySelectorAll('.anim-target:not(.revealed)').forEach(t => {
+        _animIO.observe(t);
+      });
+      activeScreen.querySelectorAll('h2:not(.revealed), h3:not(.revealed)').forEach(h => {
+        _headIO.observe(h);
+      });
+      setTimeout(() => {
+        activeScreen.querySelectorAll('.anim-target:not(.revealed)').forEach(reveal);
+        activeScreen.querySelectorAll('h2:not(.revealed), h3:not(.revealed)').forEach(h => h.classList.add('revealed'));
+      }, 260);
+    }
+
+    // When a screen becomes active, observe its animation targets
+    window.addEventListener('load', () => {
+      setTimeout(() => observeActiveScreen(), 400);
+    });
+
+    /* ════════════════════════════════════════════════════
+       MOTOR DE AUDIO
+       Reglas:
+       · Cada sección tiene su propio Audio independiente.
+       · Al entrar en pantalla → empieza automáticamente.
+       · Al salir de pantalla  → para (fade out).
+       · El botón play/pausa permite control manual.
+       · Pausar manualmente SOLO afecta esa sección;
+         al entrar en OTRA sección con audio, esta sí arranca.
+       · Si dos secciones están visibles a la vez, solo
+         suena la más reciente (la que entró última).
+    ════════════════════════════════════════════════════ */
+    const AudioEngine = (() => {
+      // Mapa: sección DOM → { audio, card, opts, manuallyPaused }
+      const map = new Map();
+      const STEPS = 25, MS = 350;
+
+      const toast = document.getElementById('audio-toast');
+      const miniBtn = document.getElementById('audio-mini');
+      let toastT, currentSec = null;
+
+      /* ── Toast ── */
+      function showToast(msg) {
+        toast.textContent = msg;
+        toast.classList.add('show');
+        clearTimeout(toastT);
+        toastT = setTimeout(() => toast.classList.remove('show'), 3000);
+      }
+
+      /* ── Mini botón flotante ── */
+      function updateMini() {
+        const d = currentSec ? map.get(currentSec) : null;
+        if (!d) { miniBtn.classList.remove('visible', 'playing'); return; }
+        miniBtn.classList.add('visible');
+        miniBtn.textContent = d.audio.paused ? '�–¶' : '⏸';
+        miniBtn.classList.toggle('playing', !d.audio.paused);
+      }
+      miniBtn.addEventListener('click', () => {
+        const d = currentSec ? map.get(currentSec) : null;
+        if (!d) return;
+        if (d.audio.paused) { d.manuallyPaused = false; _play(d); }
+        else { d.manuallyPaused = true; _stop(d); }
+      });
+
+      /* ── Fades ── */
+      function fadeIn(au, targetVol) {
+        clearInterval(au._fadeIv);
+        au.volume = 0;
+        const step = targetVol / STEPS;
+        au._fadeIv = setInterval(() => {
+          au.volume = Math.min(au.volume + step, targetVol);
+          if (au.volume >= targetVol) clearInterval(au._fadeIv);
+        }, MS / STEPS);
+      }
+      function fadeOut(au, cb) {
+        clearInterval(au._fadeIv);
+        if (au.volume <= 0) { au.pause(); if (cb) cb(); return; }
+        const step = au.volume / STEPS;
+        au._fadeIv = setInterval(() => {
+          au.volume = Math.max(au.volume - step, 0);
+          if (au.volume <= 0) {
+            clearInterval(au._fadeIv);
+            au.pause();
+            if (cb) cb();
+          }
+        }, MS / STEPS);
+      }
+
+      /* ── Actualizar UI de botones ── */
+      function syncUI(d, playing) {
+        d.card.classList.toggle('playing', playing);
+        const btn = d.card.querySelector('.audio-btn');
+        if (btn) { btn.textContent = playing ? '⏸' : '�–¶'; btn.classList.toggle('playing', playing); }
+        const cb = d.sec.querySelector('.collage-play-btn');
+        if (cb) { cb.textContent = playing ? '⏸' : '�–¶'; cb.classList.toggle('playing', playing); }
+        // Mini botón inline (modo compacto)
+        const mi = d.sec.querySelector('.audio-mini-inline');
+        if (mi) { mi.textContent = playing ? '⏸' : '�–¶'; mi.classList.toggle('playing', playing); }
+        updateMini();
+      }
+
+      /* ── Reproducir ── */
+      function _play(d) {
+        // Si la misma canción ya suena en otra sección → transferir sin reiniciar
+        let transferred = false;
+        map.forEach((other, sec) => {
+          if (sec !== d.sec && !other.audio.paused) {
+            if (other.opts.src === d.opts.src) {
+              // Misma canción: transferir el Audio object
+              d.audio = other.audio;
+              other.audio = new Audio(); // dejar un placeholder vacío
+              syncUI(other, false);
+              transferred = true;
+            } else {
+              fadeOut(other.audio);
+              syncUI(other, false);
+            }
+          }
+        });
+        currentSec = d.sec;
+        if (transferred) {
+          // Ya está sonando, solo actualizar UI
+          syncUI(d, true);
+          _tick(d);
+        } else {
+          d.audio.play().catch(() => { });
+          fadeIn(d.audio, d.opts.volume || 1);
+          syncUI(d, true);
+          _tick(d);
+        }
+        updateMini();
+      }
+
+      /* ── Parar ── */
+      function _stop(d) {
+        fadeOut(d.audio);
+        syncUI(d, false);
+        updateMini();
+      }
+
+      /* ── Barra de progreso ── */
+      function _tick(d) {
+        const fill = d.card.querySelector('.audio-bar-fill');
+        const time = d.card.querySelector('.audio-time');
+        function fmt(s) { const m = Math.floor(s / 60), ss = Math.floor(s % 60); return `${m}:${ss < 10 ? '0' : ''}${ss}`; }
+        (function loop() {
+          if (d.audio.paused) return;
+          const pct = d.audio.duration ? (d.audio.currentTime / d.audio.duration * 100) : 0;
+          if (fill) fill.style.width = pct + '%';
+          if (time && d.audio.duration) time.textContent = `${fmt(d.audio.currentTime)} / ${fmt(d.audio.duration)}`;
+          requestAnimationFrame(loop);
+        })();
+      }
+
+      /* ── Widget visual del reproductor ── */
+      function buildCard(d) {
+        const card = document.createElement('div');
+        card.className = 'audio-card';
+        card.innerHTML = `
+      <button class="audio-btn" title="Play / Pausa">▶</button>
+      <div class="audio-info">
+        <div class="audio-title">${d.opts.title || '🎵 Pista'}</div>
+        <div class="audio-artist">${d.opts.artist || ''}</div>
+        <div class="audio-progress-wrap">
+          <div class="audio-bar-bg"><div class="audio-bar-fill"></div></div>
+          <span class="audio-time">0:00 / 0:00</span>
+        </div>
+        <div class="audio-volume">
+          <span class="audio-vol-icon">🔊</span>
+          <input type="range" class="audio-vol-slider" min="0" max="1" step="0.05" value="${d.opts.volume || 1}">
+        </div>
+      </div>
+      <div class="audio-waves"><span></span><span></span><span></span><span></span><span></span></div>
+    `;
+        // Play/pausa manual
+        card.querySelector('.audio-btn').addEventListener('click', e => {
+          e.stopPropagation();
+          if (d.audio.paused) { d.manuallyPaused = false; _play(d); }
+          else { d.manuallyPaused = true; _stop(d); }
+        });
+        // Seek
+        card.querySelector('.audio-bar-bg').addEventListener('click', e => {
+          e.stopPropagation();
+          if (!d.audio.duration) return;
+          const r = e.currentTarget.getBoundingClientRect();
+          d.audio.currentTime = ((e.clientX - r.left) / r.width) * d.audio.duration;
+        });
+        // Volumen
+        card.querySelector('.audio-vol-slider').addEventListener('input', e => {
+          e.stopPropagation();
+          d.opts.volume = parseFloat(e.target.value);
+          if (!d.audio.paused) d.audio.volume = d.opts.volume;
+        });
+        return card;
+      }
+
+      /* ── Botón play/pausa en el footer del collage ── */
+      function buildCollageBtn(d) {
+        const btn = document.createElement('button');
+        btn.className = 'collage-play-btn'; btn.title = 'Play / Pausa'; btn.textContent = '▶';
+        btn.addEventListener('click', e => {
+          e.stopPropagation();
+          if (d.audio.paused) { d.manuallyPaused = false; _play(d); }
+          else { d.manuallyPaused = true; _stop(d); }
+        });
+        return btn;
+      }
+
+      /* ── Registrar sección con audio ── */
+      function register(section, opts) {
+        if (!opts || !opts.src) return;   // sin src → no hacer nada
+
+        const audio = new Audio(opts.src);
+        audio.loop = opts.loop !== false;
+        audio.volume = 0;
+        audio.preload = 'metadata';
+
+        // Objeto con todo el estado de esta sección
+        const d = { audio, card: null, sec: section, opts, manuallyPaused: false };
+
+        // Construir y adjuntar el widget
+        d.card = buildCard(d);
+        section.appendChild(d.card);
+
+        // Modo compacto: ocultar card completa y añadir mini botón junto al título
+        if (opts.compact) {
+          d.card.classList.add('compact');
+          const miniBtn = document.createElement('button');
+          miniBtn.className = 'audio-mini-inline';
+          miniBtn.textContent = '▶';
+          miniBtn.title = 'Play / Pausa';
+          miniBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (d.audio.paused) { d.manuallyPaused = false; _play(d); }
+            else { d.manuallyPaused = true; _stop(d); }
+          });
+          // Buscar el mejor lugar: título h3, footer de collage, o cualquier h2/h3
+          const titleEl = section.querySelector('h3, .collage-footer, h2');
+          if (titleEl) {
+            titleEl.style.display = 'flex';
+            titleEl.style.alignItems = 'center';
+            titleEl.style.justifyContent = 'center';
+            titleEl.appendChild(miniBtn);
+          } else {
+            section.insertBefore(miniBtn, section.firstChild);
+          }
+        }
+
+        // Ocultar el viejo botón de collage si estamos en modo compacto
+        if (!opts.compact) {
+          const footer = section.querySelector('.collage-footer');
+          if (footer) {
+            let top = footer.querySelector('.collage-footer-top');
+            if (!top) {
+              top = document.createElement('div'); top.className = 'collage-footer-top';
+              while (footer.firstChild) top.appendChild(footer.firstChild);
+              footer.appendChild(top);
+            }
+            top.appendChild(buildCollageBtn(d));
+          }
+        }
+
+        map.set(section, d);
+
+        /* IntersectionObserver de audio.
+           rootMargin '-25% 0px -25% 0px' → dispara cuando
+           el 50% central del viewport cubre la sección.
+           threshold:0 garantiza que funcione aunque la
+           sección sea más alta que la pantalla.
+           NOTA: si la sección vive dentro de un .pa-screen,
+           PageAlbum controla el audio → no auto-play/pause.   */
+        const io = new IntersectionObserver(entries => {
+          entries.forEach(e => {
+            if (e.isIntersecting) {
+              // Entró en la zona central del viewport
+              if (d.manuallyPaused) return;
+              currentSec = section;
+              _play(d);
+              showToast(`🎵 ${opts.title || 'Reproduciendo...'}`);
+            } else {
+              // Salió del viewport → siempre parar y resetear
+              if (!d.audio.paused) _stop(d);
+              d.manuallyPaused = false;   // reset: próxima entrada auto-play
+              if (currentSec === section) { currentSec = null; updateMini(); }
+            }
+          });
+        }, { threshold: 0, rootMargin: '-25% 0px -25% 0px' });
+
+        io.observe(section);
+      }
+
+      return { register };
+    })();
+
+    /* ── Utilidades de celdas ── */
+    function makeCell(src, cls = '') {
+      const d = document.createElement('div'); d.className = 'col-cell ' + cls;
+      if (src) {
+        const img = new Image(); img.src = src; img.alt = '';
+        img.loading = 'lazy';
+        img.onerror = () => {
+          if (img.src.endsWith('.png')) {
+            img.src = img.src.replace(/\.png$/, '.jpeg');
+          } else { img.remove(); addPh(d); }
+        };
+        d.appendChild(img);
+      }
+      else { addPh(d); }
+      return d;
+    }
+    function addPh(el) { el.innerHTML += '<div class="ph"><div class="ph-icon">�–¼ï¸</div><span>imagen</span></div>'; }
+
+    /* ╔═══════════════════════════════════════════════�—
+       ║   API PÚBLICA  →  album.*                     ║
+       ╚═══════════════════════════════════════════════╝ */
+    const album = (() => {
+      const root = document.getElementById('album-root');
+      function append(el) { root.appendChild(el); return el; }
+
+      function makeSection(innerEl) {
+        const s = document.createElement('div');
+        s.className = 'album-section';
+        s.appendChild(innerEl);
+        return append(s);
+      }
+
+      /* ── inicio ── */
+      function inicio({ foto = '', nombre = 'Nombre Aquí', mensaje = '', emoji = '🎉', tag = 'Hoy es un día especial' } = {}) {
+        const sec = document.createElement('div'); sec.className = 'hero-section hero-rings';
+        sec.innerHTML = `
+      <div class="hero-photo-ring">
+        ${foto ? `<img src="${foto}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ``}
+        <div class="ph" style="${foto ? 'display:none' : ''}">🎂</div>
+      </div>
+      <div class="hero-emoji">${emoji}</div>
+      <p class="hero-tag">✦ ${tag} ✦</p>
+      <h1 class="hero-title">Feliz Cumpleaños</h1>
+      <div class="hero-name">${nombre}</div>
+      ${mensaje ? `<p class="hero-subtitle">"${mensaje}"</p>` : ''}
+      <p class="scroll-cue">Desliza para ver ↓</p>
+    `;
+        root.appendChild(sec);
+        setTimeout(() => fullBurst(220), 400);
+        setTimeout(() => fullBurst(120), 1200);
+      }
+
+      /* ── cierre ── */
+      function cierre({ titulo = '¡Te quiero mucho!', subtitulo = 'Por muchos más momentos así', emoji = '❤️' } = {}) {
+        const div = document.createElement('div'); div.className = 'album-footer';
+        div.innerHTML = `
+      <div class="album-divider" style="margin-bottom:20px">🎂🎈🎂🎈🎂</div>
+      <div class="footer-title">${titulo}</div>
+      <p class="footer-sub">✦ ${subtitulo} ✦</p>
+      <div class="footer-emojis">${emoji}</div>
+    `;
+        root.appendChild(div);
+        _headIO.observe(div);
+      }
+
+      /* ── separador ── */
+      function separador(emojis = '🎈 🎉 🎊 🎈') {
+        const d = document.createElement('div'); d.className = 'album-divider'; d.textContent = emojis;
+        root.appendChild(d);
+      }
+
+      /* ── titulo ── */
+      function titulo(texto, subtexto = '', color = '') {
+        const G = { pink: 'linear-gradient(90deg,#a855f7,#f472b6)', yellow: 'linear-gradient(90deg,#f9c846,#fb923c)', teal: 'linear-gradient(90deg,#2dd4bf,#60a5fa)', blue: 'linear-gradient(90deg,#60a5fa,#a855f7)', green: 'linear-gradient(90deg,#4ade80,#2dd4bf)' };
+        const grad = G[color] || G.pink;
+        const d = document.createElement('div'); d.className = 'sec-heading'; d.style.cssText = 'width:100%;text-align:center;margin-bottom:4px';
+        if (subtexto) d.innerHTML += `<p class="sec-label">${subtexto}</p>`;
+        d.innerHTML += `<h2 class="sec-title" style="background:${grad};-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">${texto}</h2>`;
+        root.appendChild(d); _headIO.observe(d);
+      }
+
+      /* ── foto ──
+         audio: { src, title, artist, volume, loop }  ← opcional
+      ── */
+      function foto(src, { texto = '', subtexto = '', animacion = 'zoom', ratio = 'portrait', estilo = '', badge = '', audio = null } = {}) {
+        const ratioC = ratio === 'square' ? 'ratio-sq' : ratio === 'wide' ? 'ratio-16x9' : 'ratio-4x5';
+        const frame = document.createElement('div');
+        frame.className = `photo-frame ${ratioC} anim-target`;
+        if (estilo === 'gold') frame.style.background = 'linear-gradient(45deg,#f9c846,#fb923c,#f9c846)';
+        if (estilo === 'neon') frame.style.cssText += 'box-shadow:0 0 20px #2dd4bf,0 0 60px rgba(45,212,191,.25)';
+        if (estilo === 'rainbow') frame.style.background = 'linear-gradient(45deg,#f9c846,#f472b6,#60a5fa,#4ade80,#f9c846)';
+        if (estilo === 'none') frame.style.background = 'transparent';
+        frame.style.position = 'relative';
+        if (src) {
+          const _img = document.createElement('img'); _img.src = src; _img.alt = texto; _img.loading = 'lazy';
+          _img.onerror = () => { if (_img.src.endsWith('.png')) { _img.src = _img.src.replace(/\.png$/, '.jpeg'); } else { _img.remove(); frame.innerHTML = `<div class="ph" style="min-height:220px"><div class="ph-icon">�–¼ï¸</div><span>Foto no encontrada</span></div>`; } };
+          frame.appendChild(_img);
+        }
+        else { frame.innerHTML = `<div class="ph" style="min-height:220px"><div class="ph-icon">�–¼ï¸</div><span>Coloca tu foto aquí</span></div>`; }
+        if (badge) { const bdg = document.createElement('div'); bdg.style.cssText = 'position:absolute;top:10px;right:10px;background:rgba(0,0,0,.5);backdrop-filter:blur(6px);border-radius:20px;padding:4px 10px;font-size:16px;z-index:2'; bdg.textContent = badge; frame.appendChild(bdg); }
+
+        const sec = makeSection(frame);
+        if (texto || subtexto) {
+          const f = document.createElement('div'); f.className = 'collage-footer';
+          const top = document.createElement('div'); top.className = 'collage-footer-top';
+          const info = document.createElement('div');
+          if (texto) info.innerHTML += `<div class="col-caption">${texto}</div>`;
+          if (subtexto) info.innerHTML += `<div class="col-sub">${subtexto}</div>`;
+          top.appendChild(info); f.appendChild(top); sec.appendChild(f);
+        }
+        attachAnim(sec, animacion, audio);
+      }
+
+      /* ── video ── */
+      function video(src, { texto = '', rotacion = 0, silencio = true, ratio = 'wide', animacion = 'flip', audio = null } = {}) {
+        const ratioC = ratio === 'wide' ? 'ratio-16x9' : ratio === 'square' ? 'ratio-sq' : 'ratio-4x5';
+        const frame = document.createElement('div');
+        frame.className = `photo-frame ${ratioC} anim-target`; frame.style.position = 'relative';
+        if (src) {
+          const v = document.createElement('video');
+          v.src = src; v.autoplay = false; v.loop = true; v.playsInline = true;
+          v.preload = 'metadata';
+          v.muted = silencio; v.controls = !silencio;
+          if (rotacion) v.style.transform = `rotate(${rotacion}deg)`;
+          frame.appendChild(v);
+        } else { frame.innerHTML = '<div class="ph" style="min-height:200px"><div class="ph-icon">🎬</div><span>Video aquí</span></div>'; }
+
+        const sec = makeSection(frame);
+        if (texto) { const f = document.createElement('div'); f.className = 'collage-footer'; f.innerHTML = `<div class="collage-footer-top"><div><div class="col-caption">${texto}</div></div></div>`; sec.appendChild(f); }
+        attachAnim(sec, animacion, audio);
+
+        // Auto-play video solo cuando es visible
+        const videoEl = frame.querySelector('video');
+        if (videoEl) {
+          const vIO = new IntersectionObserver(entries => {
+            entries.forEach(e => {
+              if (e.isIntersecting) videoEl.play().catch(() => { });
+              else videoEl.pause();
+            });
+          }, { threshold: 0.3 });
+          vIO.observe(frame);
+        }
+      }
+
+      /* ── gif ── */
+      function gif(src, { texto = '', animacion = 'elastic', audio = null } = {}) {
+        foto(src, { texto, ratio: 'square', animacion, estilo: 'rainbow', audio });
+      }
+
+      /* ── collage ──
+         audio: { src, title, artist, volume, loop }  ← opcional
+         El botón play/pausa aparece en el título del collage.
+      ── */
+      function collage(fotos = [], { layout = '3t', texto = '', subtexto = '', animacion = 'pop', audio = null } = {}) {
+        if (layout === 'scatter') return _scatter(fotos, texto, animacion, audio);
+
+        const wrap = document.createElement('div'); wrap.className = 'collage-wrap anim-target';
+        const grid = document.createElement('div'); grid.className = `collage-${layout}`;
+        const mainIdx = { '3t': 0, '3l': 2, '5m': 0 };
+        fotos.forEach((src, i) => { grid.appendChild(makeCell(src, mainIdx[layout] === i ? 'col-main' : '')); });
+        wrap.appendChild(grid);
+
+        if (texto || subtexto) {
+          const f = document.createElement('div'); f.className = 'collage-footer';
+          const top = document.createElement('div'); top.className = 'collage-footer-top';
+          const info = document.createElement('div');
+          if (texto) info.innerHTML += `<div class="col-caption">${texto}</div>`;
+          if (subtexto) info.innerHTML += `<div class="col-sub">${subtexto}</div>`;
+          top.appendChild(info);
+          f.appendChild(top);
+          wrap.appendChild(f);
+        }
+
+        const sec = makeSection(wrap);
+        attachAnim(sec, animacion === 'stagger' ? 'stagger' : 'pop', audio);
+      }
+
+      function _scatter(fotos, texto, animacion, audio = null) {
+        const coords = [{ t: '2%', l: '2%', r: '-12deg', z: 40 }, { t: '22%', l: '44%', r: '10deg', z: 10 }, { t: '48%', l: '4%', r: '-5deg', z: 30 }, { t: '68%', l: '38%', r: '15deg', z: 20 }];
+        const inner = document.createElement('div'); inner.className = 'scatter-container anim-target';
+        fotos.forEach((src, i) => {
+          const c = coords[i % coords.length];
+          const d = document.createElement('div'); d.className = 'scatter-item';
+          d.style.cssText = `top:${c.t};left:${c.l};transform:rotate(${c.r});z-index:${c.z}`;
+          if (src) { d.innerHTML = `<img src="${src}" alt="">`; } else { d.innerHTML = '<div class="ph" style="min-height:120px"><div class="ph-icon">�–¼ï¸</div></div>'; }
+          inner.appendChild(d);
+        });
+        const sec = makeSection(inner);
+        if (texto) {
+          const f = document.createElement('div'); f.className = 'collage-footer';
+          const top = document.createElement('div'); top.className = 'collage-footer-top';
+          const info = document.createElement('div'); info.innerHTML = `<div class="col-caption">${texto}</div>`;
+          top.appendChild(info); f.appendChild(top); sec.appendChild(f);
+        }
+        attachAnim(sec, 'scatter', audio);
+      }
+
+      /* ── mensaje ── */
+      function mensaje({ emoji = '🎂', texto = '', firma = '', animacion = 'fade-blur', audio = null } = {}) {
+        const card = document.createElement('div'); card.className = 'msg-card anim-target';
+        card.innerHTML = `
+      ${emoji ? `<span class="msg-emoji">${emoji}</span>` : ''}
+      <p class="msg-text">${texto}</p>
+      ${firma ? `<div class="msg-sign">${firma}</div>` : ''}
+    `;
+        const sec = makeSection(card);
+        attachAnim(sec, animacion, audio);
+      }
+
+      /* ── musica ── */
+      function musica({ src = '', title = '', artist = '', volume = 1, loop = true, animacion = 'fade-blur' } = {}) {
+        const ph = document.createElement('div'); ph.className = 'anim-target';
+        ph.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:10px;width:100%';
+        ph.innerHTML = `<div style="font-size:52px;animation:bounce 1.3s ease-in-out infinite">🎵</div><div style="font-family:'Pacifico',cursive;font-size:20px;color:rgba(255,255,255,.55);text-align:center">${title || 'Música especial para ti'}</div>`;
+        const sec = makeSection(ph);
+        attachAnim(sec, animacion, { src, title, artist, volume, loop });
+      }
+
+      /* ── deseos ── */
+      function deseos(lista = []) {
+        const ul = document.createElement('div'); ul.className = 'wish-list anim-target';
+        lista.forEach(item => {
+          const li = document.createElement('div'); li.className = 'wish-item';
+          const ic = typeof item === 'string' ? '🎉' : item.icono || '🎉';
+          const tx = typeof item === 'string' ? item : item.texto;
+          li.innerHTML = `<span class="wish-icon">${ic}</span>${tx}`;
+          ul.appendChild(li);
+        });
+        const sec = makeSection(ul);
+        attachAnim(sec, 'stagger', null);
+      }
+
+      /* ── estadisticas ── */
+      function estadisticas(lista = []) {
+        const g = document.createElement('div'); g.className = 'stats-grid anim-target';
+        lista.forEach(item => {
+          const b = document.createElement('div'); b.className = 'stat-box';
+          b.innerHTML = `<div class="stat-num">${item.numero}</div><div class="stat-lbl">${item.etiqueta}</div>`;
+          g.appendChild(b);
+        });
+        const sec = makeSection(g);
+        attachAnim(sec, 'stagger', null);
+      }
+
+      /* ── tap sparkle ── */
+      const SP = ['🎉', '✨', '🎊', '🎈', '⭐', '🌟', '💫', '🥳', '🎂', '🎁'];
+      document.addEventListener('click', e => {
+        for (let i = 0; i < 5; i++) {
+          const el = document.createElement('span');
+          el.textContent = SP[Math.floor(Math.random() * SP.length)];
+          el.style.cssText = `position:fixed;left:${e.clientX + (Math.random() - .5) * 60}px;top:${e.clientY + (Math.random() - .5) * 60}px;font-size:${Math.random() * 14 + 10}px;pointer-events:none;z-index:9999;animation:tSpark .9s ease forwards`;
+          document.body.appendChild(el); setTimeout(() => el.remove(), 900);
+        }
+        burstAt(e.clientX, e.clientY, 12);
+      });
+
+      return { inicio, cierre, separador, titulo, foto, video, gif, collage, mensaje, musica, deseos, estadisticas };
+    })();
+
+    /* ╔═══════════════════════════════════════════════════════════════════════�—
+       ║                                                                       ║
+       ║                   ✏️  MI ÁLBUM — EDITA AQUÍ                           ║
+       ║                                                                       ║
+       ║  MODO PANTALLAS: cambia 'gift' por:                                   ║
+       ║    'gift' | 'swipe' | 'balloon' | 'candle' | 'envelope'              ║
+       ║                                                                       ║
+       ║  Helpers:  fotoPNG('carpeta',0)  fotoJPEG('carpeta',0)               ║
+       ║            videoMP4(1)           mp3(1)                               ║
+       ╚═══════════════════════════════════════════════════════════════════════╝ */
+
+    /* ══════════════════════════════════════════════
+       PANTALLAS TEMÁTICAS (AHORA DESDE JSON)
+    ══════════════════════════════════════════════ */
+    const albumData = window.albumData || {
+  global: { transition: 'gift', progress: true },
+  screens: [
+    {
+      name: 'Pantalla de Ejemplo',
+      opts: { emoji: '🎉', color: 'pink' },
+      sections: []
+    }
+  ]
+};
+
+    /* Renderizar desde JSON automatizado */
+    window.activeAlbumInstance = null;
+    function notifyEditorSelection(target) {
+      if (window === window.parent) return;
+      window.parent.postMessage({ type: 'ALBUM_SELECT_TARGET', ...target }, '*');
+    }
+
+    function wireEditorSelection(data) {
+      if (window === window.parent) return;
+      document.querySelectorAll('.pa-screen').forEach((screenEl, sIdx) => {
+        screenEl.addEventListener('click', () => notifyEditorSelection({ sIdx }), true);
+        const content = screenEl.querySelector(':scope > .pa-screen-content');
+        if (!content) return;
+        Array.from(content.children).forEach((sectionEl, secIdx) => {
+          sectionEl.dataset.editorSection = `${sIdx}:${secIdx}`;
+          sectionEl.addEventListener('click', () => {
+            notifyEditorSelection({ sIdx, secIdx });
+          }, true);
+        });
+      });
+    }
+
+    window.renderAlbumData = function (data, startIndex = 0) {
+      currentAlbumData = data;
+      const root = document.querySelector('#album-root');
+      if (root) root.innerHTML = '';
+      window.activeAlbumInstance = PageAlbum.hydrate('#album-root', album, data, startIndex);
+      if (window.activeAlbumInstance) window.activeAlbumInstance.render();
+      wireEditorSelection(data);
+      if (typeof observeActiveScreen === 'function') {
+        setTimeout(() => observeActiveScreen(), 80);
+      }
+    };
+
+    // Renderizar estado inicial
+    window.renderAlbumData(albumData);
+
+    // Si estamos dentro de un iframe (Editor), le pasamos los datos originales de forma segura
+    if (window !== window.parent) {
+      window.parent.postMessage({ type: 'ALBUM_INIT_DATA', data: albumData }, '*');
+    }
+
+    // Escuchar actualizaciones dinámicas desde el editor
+    window.addEventListener('message', (e) => {
+      if (e.data) {
+        if (e.data.type === 'ALBUM_UPDATE_DATA') {
+          // Mantener la página actual visible tras actualizar los datos
+          const currentIndex = window.activeAlbumInstance ? window.activeAlbumInstance._currentIndex : 0;
+          window.renderAlbumData(e.data.data, currentIndex);
+
+          if (currentIndex > 0) {
+            window.scrollTo({ top: 0 });
+          }
+        } else if (e.data.type === 'ALBUM_GOTO_SCREEN' && window.activeAlbumInstance) {
+          window.activeAlbumInstance.goTo(e.data.index);
+        }
+      }
+    });
+
+    /* ╔═══════════════════════════════════════════════�—
+       ║   HELPERS DE RUTAS                            ║
+       ╚═══════════════════════════════════════════════╝ */
+    function fotoPNG(carpeta, numero) { return `fotos/${carpeta}/foto${numero}.png`; }
+    function fotoJPEG(carpeta, numero) { return `fotos/${carpeta}/foto${numero}.jpeg`; }
+    function fotoAuto(carpeta, numero) { return `fotos/${carpeta}/foto${numero}.png`; }
+    function videoMP4(numero) { return `videos/video${numero}.mp4`; }
+    function mp3(numero) { const F = ['Arena_Ardiente.mp3', 'Mi_Motor_y_Mi_Corazón.mp3', 'Pamela_Rompe_La_Pista.mp3']; return `mp3/${F[numero] || F[0]}`; }
+  </script>
+<!-- Code injected by live-server -->
+<script>
+	// <![CDATA[  <-- For SVG support
+	if ('WebSocket' in window) {
+		(function () {
+			function refreshCSS() {
+				var sheets = [].slice.call(document.getElementsByTagName("link"));
+				var head = document.getElementsByTagName("head")[0];
+				for (var i = 0; i < sheets.length; ++i) {
+					var elem = sheets[i];
+					var parent = elem.parentElement || head;
+					parent.removeChild(elem);
+					var rel = elem.rel;
+					if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
+						var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
+						elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
+					}
+					parent.appendChild(elem);
+				}
+			}
+			var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
+			var address = protocol + window.location.host + window.location.pathname + '/ws';
+			var socket = new WebSocket(address);
+			socket.onmessage = function (msg) {
+				if (msg.data == 'reload') window.location.reload();
+				else if (msg.data == 'refreshcss') refreshCSS();
+			};
+			if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
+				console.log('Live reload enabled.');
+				sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
+			}
+		})();
+	}
+	else {
+		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
+	}
+	// ]]>
+</script>
+<!-- Code injected by live-server -->
+<script>
+	// <![CDATA[  <-- For SVG support
+	if ('WebSocket' in window) {
+		(function () {
+			function refreshCSS() {
+				var sheets = [].slice.call(document.getElementsByTagName("link"));
+				var head = document.getElementsByTagName("head")[0];
+				for (var i = 0; i < sheets.length; ++i) {
+					var elem = sheets[i];
+					var parent = elem.parentElement || head;
+					parent.removeChild(elem);
+					var rel = elem.rel;
+					if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
+						var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
+						elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
+					}
+					parent.appendChild(elem);
+				}
+			}
+			var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
+			var address = protocol + window.location.host + window.location.pathname + '/ws';
+			var socket = new WebSocket(address);
+			socket.onmessage = function (msg) {
+				if (msg.data == 'reload') window.location.reload();
+				else if (msg.data == 'refreshcss') refreshCSS();
+			};
+			if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
+				console.log('Live reload enabled.');
+				sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
+			}
+		})();
+	}
+	else {
+		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
+	}
+	// ]]>
+</script>
+<!-- Code injected by live-server -->
+<script>
+	// <![CDATA[  <-- For SVG support
+	if ('WebSocket' in window) {
+		(function () {
+			function refreshCSS() {
+				var sheets = [].slice.call(document.getElementsByTagName("link"));
+				var head = document.getElementsByTagName("head")[0];
+				for (var i = 0; i < sheets.length; ++i) {
+					var elem = sheets[i];
+					var parent = elem.parentElement || head;
+					parent.removeChild(elem);
+					var rel = elem.rel;
+					if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
+						var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
+						elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
+					}
+					parent.appendChild(elem);
+				}
+			}
+			var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
+			var address = protocol + window.location.host + window.location.pathname + '/ws';
+			var socket = new WebSocket(address);
+			socket.onmessage = function (msg) {
+				if (msg.data == 'reload') window.location.reload();
+				else if (msg.data == 'refreshcss') refreshCSS();
+			};
+			if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
+				console.log('Live reload enabled.');
+				sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
+			}
+		})();
+	}
+	else {
+		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
+	}
+	// ]]>
+</script>
+</body>
+
+</html>

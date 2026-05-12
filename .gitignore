@@ -1,0 +1,9 @@
+# Private album content
+album-data.js
+fotos/
+videos/
+mp3/
+
+# Local editor/browser state
+.DS_Store
+Thumbs.db

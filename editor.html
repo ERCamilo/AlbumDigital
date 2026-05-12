@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Creador de Álbumes Visual</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: system-ui, -apple-system, sans-serif;
+            display: grid;
+            grid-template-columns: 420px minmax(460px, 1fr) 360px;
+            grid-template-rows: 56px 1fr;
+            height: 100vh;
+            overflow: hidden;
+            background: #eef2f7;
+            color: #1f2937;
+        }
+
+        #appbar {
+            grid-column: 1 / -1;
+            grid-row: 1;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 0 16px;
+            background: rgba(255, 255, 255, .96);
+            border-bottom: 1px solid #e5e7eb;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, .04);
+            z-index: 20;
+        }
+
+        .appbar-brand,
+        .appbar-center,
+        .appbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .appbar-brand {
+            min-width: 280px;
+        }
+
+        .app-logo {
+            width: 30px;
+            height: 30px;
+            display: grid;
+            place-items: center;
+            border-radius: 8px;
+            color: #fff;
+            background: linear-gradient(135deg, #0f766e, #14b8a6);
+            font-weight: 900;
+        }
+
+        .app-title {
+            font-weight: 800;
+            color: #0f172a;
+            font-size: 14px;
+        }
+
+        .project-name {
+            border-left: 1px solid #e2e8f0;
+            padding-left: 12px;
+            color: #475569;
+            font-size: 12px;
+        }
+
+        #sidebar {
+            grid-column: 1;
+            grid-row: 2;
+            background: white;
+            border-right: 1px solid #e5e7eb;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            z-index: 10;
+            scrollbar-width: thin;
+        }
+
+        #preview {
+            grid-column: 2;
+            grid-row: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            background: #e7ebf2;
+            position: relative;
+            background-image: radial-gradient(#d1d5db 1px, transparent 1px);
+            background-size: 20px 20px;
+            min-width: 0;
+            padding: 18px 24px;
+        }
+
+        #inspector {
+            grid-column: 3;
+            grid-row: 2;
+            background: #ffffff;
+            border-left: 1px solid #e5e7eb;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            z-index: 8;
+            scrollbar-width: thin;
+        }
+
+        .preview-toolbar,
+        .inspector-header {
+            width: min(100%, 720px);
+            background: rgba(255, 255, 255, .92);
+            border: 1px solid #dbe3ee;
+            border-radius: 10px;
+            padding: 10px 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 12px 24px rgba(15, 23, 42, .08);
+        }
+
+        .preview-toolbar-title,
+        .inspector-title {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .eyebrow {
+            color: #64748b;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+        }
+
+        .strong-title {
+            color: #0f172a;
+            font-size: 14px;
+            font-weight: 800;
+        }
+
+        .toolbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .pill-btn {
+            border: 1px solid #cbd5e1;
+            background: #fff;
+            color: #334155;
+            border-radius: 999px;
+            padding: 7px 11px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .pill-btn:disabled {
+            opacity: .45;
+            cursor: not-allowed;
+        }
+
+        .pill-btn.active {
+            background: #0f172a;
+            border-color: #0f172a;
+            color: white;
+        }
+
+        /* Iframe Mobile Container */
+        .preview-frame {
+            width: 414px;
+            height: 896px;
+            background: white;
+            border-radius: 40px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+            border: 12px solid #1f2937;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .preview-frame.compact {
+            width: 360px;
+            height: 780px;
+            border-radius: 34px;
+        }
+
+        .preview-frame iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: white;
+        }
+
+        /* Sidebar Elements */
+        .sidebar-header {
+            padding: 18px;
+            border-bottom: 1px solid #e5e7eb;
+            background: #ffffff;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            gap: 10px;
+        }
+
+        .sidebar-header h2 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 700;
+            color: #111827;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .sidebar-subtitle {
+            margin: 4px 0 0;
+            color: #64748b;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .export-btn {
+            background: linear-gradient(135deg, #0f766e, #14b8a6);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            box-shadow: 0 4px 12px rgba(20, 184, 166, 0.25);
+            transition: all 0.2s;
+        }
+
+        .export-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(20, 184, 166, 0.32);
+            filter: brightness(1.05);
+        }
+
+        .sidebar-header-actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .sidebar-section {
+            padding: 20px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .sidebar-header {
+            order: 1;
+        }
+
+        .sidebar-tools {
+            order: 2;
+            background: #fbfdff;
+            padding: 14px 18px;
+        }
+
+        .sidebar-global {
+            order: 3;
+            background: #fbfdff;
+            padding: 14px 18px;
+        }
+
+        .sidebar-editor {
+            order: 4;
+            padding: 0;
+            border-bottom: 0;
+        }
+
+        .inspector-screens {
+            padding: 14px;
+            border-bottom: 0;
+        }
+
+        .sidebar-tools h3,
+        .sidebar-global h3 {
+            margin-bottom: 10px;
+        }
+
+        .sidebar-help {
+            font-size: 11px;
+            color: #64748b;
+            margin-top: 8px;
+            line-height: 1.4;
+        }
+
+        .sidebar-section h3 {
+            margin: 0 0 16px 0;
+            font-size: 12px;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-weight: 700;
+        }
+
+        /* Form controls */
+        .control-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 14px;
+            color: #374151;
+            font-weight: 600;
+        }
+
+        select,
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+            box-sizing: border-box;
+            background: #f9fafb;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            outline: none;
+        }
+
+        select:focus,
+        input[type="text"]:focus {
+            border-color: #a855f7;
+            box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
+            background: white;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 14px;
+            margin-bottom: 0;
+        }
+
+        .checkbox-label input {
+            width: 16px;
+            height: 16px;
+            accent-color: #a855f7;
+            cursor: pointer;
+        }
+
+        /* Lists */
+        .screen-item {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            transition: box-shadow 0.2s;
+        }
+
+        .screen-item:hover {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            border-color: #d1d5db;
+        }
+
+        .screen-header {
+            padding: 10px;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            justify-content: space-between;
+            align-items: start;
+            gap: 8px;
+            cursor: pointer;
+            background: #f9fafb;
+            border-bottom: 1px solid transparent;
+        }
+
+        .screen-item.open .screen-header {
+            border-bottom-color: #e5e7eb;
+            background: white;
+        }
+
+        .screen-title {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-width: 0;
+        }
+
+        .screen-card-title {
+            display: block;
+            color: #0f172a;
+            font-size: 13px;
+            font-weight: 800;
+            line-height: 1.25;
+            white-space: normal;
+            overflow-wrap: anywhere;
+        }
+
+        .screen-meta-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .screen-thumb {
+            width: 54px;
+            height: 42px;
+            flex: 0 0 auto;
+            border-radius: 8px;
+            overflow: hidden;
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+            border: 1px solid #e2e8f0;
+            display: grid;
+            place-items: center;
+            color: #64748b;
+            font-size: 20px;
+        }
+
+        .screen-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .screen-copy {
+            min-width: 0;
+        }
+
+        .screen-copy strong {
+            display: none;
+            color: #0f172a;
+            font-size: 13px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .screen-copy span {
+            color: #64748b;
+            font-size: 11px;
+        }
+
+        .screen-emoji {
+            font-size: 18px;
+        }
+
+        .screen-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+        .btn-icon {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6b7280;
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+
+        .btn-icon:hover {
+            background: #e5e7eb;
+            color: #111827;
+        }
+
+        .btn-icon.danger:hover {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .screen-body {
+            padding: 10px;
+            display: none;
+        }
+
+        .screen-item.open .screen-body {
+            display: block;
+        }
+
+        .add-btn {
+            width: 100%;
+            padding: 12px;
+            background: transparent;
+            border: 2px dashed #cbd5e1;
+            border-radius: 8px;
+            cursor: pointer;
+            color: #64748b;
+            font-weight: 600;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .add-btn:hover {
+            border-color: #a855f7;
+            color: #a855f7;
+            background: #faf5ff;
+        }
+
+        /* Section Items */
+        .section-item {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 10px 12px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            font-size: 13px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .section-item.selected,
+        .screen-item.selected {
+            border-color: #14b8a6;
+            box-shadow: 0 0 0 3px rgba(20, 184, 166, .14);
+        }
+
+        .module-dock {
+            width: min(100%, 760px);
+            background: rgba(255, 255, 255, .96);
+            border: 1px solid #dbe3ee;
+            border-radius: 12px;
+            box-shadow: 0 18px 36px rgba(15, 23, 42, .12);
+            padding: 12px;
+        }
+
+        .module-dock-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            color: #0f172a;
+            font-size: 13px;
+            font-weight: 800;
+        }
+
+        .module-dock-grid {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(70px, 1fr));
+            gap: 8px;
+        }
+
+        .dock-module-btn {
+            border: 1px solid #e2e8f0;
+            background: #fff;
+            border-radius: 10px;
+            min-height: 76px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            color: #334155;
+            font-size: 11px;
+            font-weight: 800;
+            transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+        }
+
+        .dock-module-btn:hover {
+            transform: translateY(-2px);
+            border-color: #14b8a6;
+            box-shadow: 0 10px 18px rgba(15, 23, 42, .10);
+        }
+
+        .dock-module-icon {
+            width: 34px;
+            height: 34px;
+            display: grid;
+            place-items: center;
+            border-radius: 9px;
+            background: #ecfeff;
+            color: #0f766e;
+            font-size: 18px;
+        }
+
+        .module-picker-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+            padding: 20px;
+            background: #f8fafc;
+            overflow-y: auto;
+        }
+
+        .module-card {
+            border: 1px solid #dbe3ee;
+            background: #fff;
+            border-radius: 10px;
+            padding: 16px;
+            min-height: 118px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            text-align: left;
+            transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+        }
+
+        .module-card:hover {
+            transform: translateY(-2px);
+            border-color: #14b8a6;
+            box-shadow: 0 14px 24px rgba(15, 23, 42, .10);
+        }
+
+        .module-icon {
+            width: 38px;
+            height: 38px;
+            display: grid;
+            place-items: center;
+            border-radius: 10px;
+            background: #ecfeff;
+            color: #0f766e;
+            font-size: 20px;
+        }
+
+        .module-title {
+            font-weight: 800;
+            color: #0f172a;
+            font-size: 14px;
+        }
+
+        .module-desc {
+            color: #64748b;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .review-panel {
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .review-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 14px;
+            background: #fff;
+        }
+
+        .review-card h4 {
+            margin: 0 0 10px;
+            color: #0f172a;
+            font-size: 13px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .section-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            gap: 8px;
+        }
+
+        .section-main {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+        }
+
+        .section-summary {
+            color: #64748b;
+            font-size: 12px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 130px;
+        }
+
+        .status-chip {
+            border-radius: 999px;
+            padding: 3px 8px;
+            font-size: 11px;
+            font-weight: 800;
+        }
+
+        .status-chip.ok {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-chip.warn {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .review-list {
+            margin: 0;
+            padding-left: 18px;
+            color: #475569;
+            font-size: 12px;
+            line-height: 1.55;
+        }
+
+        .inspector-form {
+            padding: 18px;
+        }
+
+        .inspector-form h3 {
+            margin: 0 0 4px;
+            color: #0f172a;
+            font-size: 18px;
+        }
+
+        .inspector-form .muted {
+            margin: 0 0 18px;
+            color: #64748b;
+            font-size: 12px;
+            line-height: 1.45;
+        }
+
+        .inspector-preview-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 12px;
+            background: #f8fafc;
+            display: grid;
+            grid-template-columns: 76px 1fr;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .inspector-preview-media {
+            width: 76px;
+            height: 76px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+            background: #fff;
+            display: grid;
+            place-items: center;
+            color: #64748b;
+            font-size: 24px;
+        }
+
+        .inspector-preview-media img,
+        .inspector-preview-media video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .inspector-preview-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 2px;
+            width: 100%;
+            height: 100%;
+        }
+
+        .inspector-preview-grid img {
+            min-width: 0;
+            min-height: 0;
+        }
+
+        .inspector-preview-copy strong {
+            display: block;
+            color: #0f172a;
+            font-size: 13px;
+            margin-bottom: 3px;
+        }
+
+        .inspector-preview-copy span {
+            display: block;
+            color: #64748b;
+            font-size: 12px;
+            line-height: 1.35;
+            word-break: break-word;
+        }
+
+        .background-preview {
+            width: 100%;
+            aspect-ratio: 9 / 16;
+            max-height: 220px;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            background-color: #0f172a;
+            background-position: center;
+            background-size: cover;
+            background-repeat: no-repeat;
+            margin-bottom: 12px;
+            overflow: hidden;
+        }
+
+        .field-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .inspector-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 14px;
+        }
+
+        .inspector-textarea {
+            width: 100%;
+            min-height: 96px;
+            resize: vertical;
+            padding: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font: inherit;
+            background: #f9fafb;
+        }
+
+        .asset-row {
+            display: grid;
+            grid-template-columns: 1fr 34px 34px;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .secondary-btn {
+            border: 1px solid #cbd5e1;
+            background: #fff;
+            color: #334155;
+            border-radius: 8px;
+            padding: 9px 12px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .secondary-btn:hover {
+            border-color: #14b8a6;
+            color: #0f766e;
+            background: #f0fdfa;
+        }
+
+        #editor-toast {
+            position: fixed;
+            left: 50%;
+            bottom: 24px;
+            transform: translate(-50%, 12px);
+            background: rgba(15, 23, 42, .94);
+            color: #fff;
+            border-radius: 999px;
+            padding: 10px 14px;
+            font-size: 13px;
+            font-weight: 700;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .2s ease, transform .2s ease;
+            z-index: 2000;
+        }
+
+        #editor-toast.show {
+            opacity: 1;
+            transform: translate(-50%, 0);
+        }
+
+        .section-type {
+            font-weight: 600;
+            color: #475569;
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.05em;
+            background: #e2e8f0;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        /* Modal Gallery */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            width: 80%;
+            max-width: 900px;
+            height: 80vh;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content.module-picker {
+            max-width: 780px;
+            height: auto;
+            max-height: 82vh;
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8fafc;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .modal-close {
+            background: #f1f5f9;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+
+        .modal-close:hover {
+            background: #e2e8f0;
+            color: red;
+        }
+
+        .gallery-top-bar {
+            padding: 16px 20px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .gallery-tabs {
+            display: flex;
+            gap: 10px;
+        }
+
+        .gallery-tab {
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: #f1f5f9;
+            color: #475569;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .gallery-tab.active {
+            background: #1e293b;
+            color: white;
+        }
+
+        .gallery-search {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 260px;
+            flex: 1;
+            max-width: 360px;
+        }
+
+        .gallery-search input {
+            width: 100%;
+            padding: 9px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 999px;
+            background: #f8fafc;
+            font-size: 13px;
+            outline: none;
+        }
+
+        .gallery-search input:focus {
+            border-color: #14b8a6;
+            box-shadow: 0 0 0 3px rgba(20, 184, 166, .12);
+            background: #fff;
+        }
+
+        .gallery-grid {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 16px;
+            background: #f8fafc;
+        }
+
+        .gallery-item {
+            aspect-ratio: 1;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #e2e8f0;
+            border: 2px solid transparent;
+            cursor: pointer;
+            position: relative;
+            transition: transform 0.2s, border-color 0.2s;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .gallery-item:hover {
+            transform: scale(1.05);
+            border-color: #a855f7;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            z-index: 2;
+        }
+
+        .gallery-item img,
+        .gallery-item video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .gallery-item .audio-icon {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 32px;
+            background: #f1f5f9;
+            padding: 10px;
+        }
+
+        .gallery-item .audio-icon audio {
+            width: 100%;
+            height: 30px;
+        }
+
+        .item-label {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            font-size: 10px;
+            padding: 4px;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .folder-picker-btn {
+            background: #10b981;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .folder-picker-btn input[type="file"] {
+            display: none;
+        }
+
+        .folder-picker-btn:hover {
+            background: #059669;
+        }
+
+        /* Inject gallery button on inputs */
+        .input-with-gallery {
+            display: flex;
+            gap: 8px;
+        }
+
+        @media (max-width: 1180px) {
+            body {
+                grid-template-columns: 380px minmax(360px, 1fr);
+            }
+
+            #inspector {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header id="appbar">
+        <div class="appbar-brand">
+            <div class="app-logo">▣</div>
+            <div class="app-title">Constructor de Álbum</div>
+            <div class="project-name">Cumpleaños</div>
+        </div>
+        <div class="appbar-center">
+            <button class="pill-btn active" type="button" onclick="setPreviewSize('phone')">Móvil</button>
+            <button class="pill-btn" type="button" onclick="setPreviewSize('compact')">Compacto</button>
+            <button class="pill-btn" type="button" onclick="selectReview()">Revisar</button>
+        </div>
+        <div class="appbar-actions sidebar-header-actions">
+            <button class="export-btn" id="btn-export">Exportar Datos</button>
+        </div>
+    </header>
+
+    <div id="sidebar">
+        <div class="sidebar-header">
+            <div>
+                <h2>Editor</h2>
+                <p class="sidebar-subtitle">Contenido, medios y ajustes del elemento seleccionado</p>
+            </div>
+        </div>
+
+        <div class="sidebar-section sidebar-tools">
+            <h3>Medios y Archivos Locales</h3>
+            <!-- Modern API Button -->
+            <button class="add-btn" id="btn-import-dir" style="margin-bottom: 8px;">
+                <span>📂</span> Importar Directorio de Proyecto
+            </button>
+            <button class="add-btn" id="btn-restore-dir"
+                style="display: none; background: #e0f2fe; color: #0284c7; border: 1px solid #7dd3fc; margin-bottom: 8px;">
+                <span>🔄</span> Restaurar Carpeta Anterior
+            </button>
+
+            <!-- Legacy Fallback -->
+            <label class="folder-picker-btn" id="legacy-picker-container" style="display: none; margin-top: 8px;">
+                <span>📁</span> Carga Clásica (Fallback)
+                <input type="file" id="dir-picker" webkitdirectory directory multiple>
+            </label>
+
+            <p class="sidebar-help">
+                Selecciona la carpeta raíz de tu proyecto (ej. "copia") para cargar todas tus fotos, videos y música sin
+                tener que teclear las rutas a mano.
+            </p>
+        </div>
+
+        <div class="sidebar-section sidebar-global">
+            <h3>Configuración Global</h3>
+            <div class="control-group">
+                <label for="global-transition">Efecto de Transición</label>
+                <select id="global-transition">
+                    <option value="gift">🎁 Caja de Regalo (gift)</option>
+                    <option value="swipe">☝️ Deslizar Pantalla (swipe)</option>
+                    <option value="balloon">🎈 Globo Explotando (balloon)</option>
+                    <option value="candle">🕯️ Soplar Vela (candle)</option>
+                    <option value="envelope">✉️ Carta / Sobre (envelope)</option>
+                </select>
+            </div>
+
+            <label class="checkbox-label">
+                <input type="checkbox" id="global-progress" checked>
+                Mostrar barra de progreso superior
+            </label>
+        </div>
+
+        <div class="sidebar-section sidebar-editor">
+            <div class="review-panel" id="review-panel">
+                <!-- Editor contextual inyectado por JS -->
+            </div>
+        </div>
+    </div>
+
+    <div id="preview">
+        <div class="preview-toolbar">
+            <div class="preview-toolbar-title">
+                <span class="eyebrow">Vista previa</span>
+                <span class="strong-title">Álbum interactivo</span>
+            </div>
+            <div class="toolbar-actions">
+                <span class="status-chip ok">Todo válido</span>
+            </div>
+        </div>
+        <div class="preview-frame">
+            <iframe id="preview-frame" src="index.html?v=editor-preview-2"></iframe>
+        </div>
+        <div class="module-dock">
+            <div class="module-dock-header">
+                <span>Añadir módulo</span>
+                <button class="pill-btn" type="button" onclick="openModulePicker(getActiveScreenIndex())">Ver todos</button>
+            </div>
+            <div class="module-dock-grid">
+                <button class="dock-module-btn" type="button" onclick="addSection(getActiveScreenIndex(), 'foto')"><span class="dock-module-icon">🖼️</span>Foto</button>
+                <button class="dock-module-btn" type="button" onclick="addSection(getActiveScreenIndex(), 'video')"><span class="dock-module-icon">▶</span>Video</button>
+                <button class="dock-module-btn" type="button" onclick="addSection(getActiveScreenIndex(), 'collage')"><span class="dock-module-icon">▦</span>Collage</button>
+                <button class="dock-module-btn" type="button" onclick="addSection(getActiveScreenIndex(), 'mensaje')"><span class="dock-module-icon">💌</span>Mensaje</button>
+                <button class="dock-module-btn" type="button" onclick="addSection(getActiveScreenIndex(), 'musica')"><span class="dock-module-icon">♪</span>Música</button>
+                <button class="dock-module-btn" type="button" onclick="addSection(getActiveScreenIndex(), 'deseos')"><span class="dock-module-icon">★</span>Deseos</button>
+                <button class="dock-module-btn" type="button" onclick="addSection(getActiveScreenIndex(), 'estadisticas')"><span class="dock-module-icon">▥</span>Estadísticas</button>
+            </div>
+        </div>
+    </div>
+
+    <aside id="inspector">
+        <div class="inspector-header" style="width:auto; border-radius:0; border-left:0; border-right:0; border-top:0; box-shadow:none;">
+            <div class="inspector-title">
+                <span class="eyebrow">Estructura</span>
+                <span class="strong-title">Pantallas y módulos</span>
+            </div>
+            <button class="pill-btn" id="btn-add-screen" type="button">+ Añadir</button>
+        </div>
+        <div class="sidebar-section inspector-screens">
+            <div id="screens-list">
+                <!-- Se inyectan las pantallas con JS -->
+            </div>
+            <p class="sidebar-help">Arrastra pantallas o módulos para cambiar el orden.</p>
+        </div>
+    </aside>
+
+    <!-- Media Gallery Modal -->
+    <div class="modal-overlay" id="gallery-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🖼️ Galería Visual de Medios</h3>
+                <button class="modal-close" onclick="closeGallery()">❌</button>
+            </div>
+
+            <div class="gallery-top-bar">
+                <div class="gallery-tabs">
+                    <button class="gallery-tab active" onclick="switchGalleryTab('images', event)">📷 Fotos</button>
+                    <button class="gallery-tab" onclick="switchGalleryTab('videos', event)">🎬 Videos</button>
+                    <button class="gallery-tab" onclick="switchGalleryTab('audios', event)">🎵 Música</button>
+                </div>
+                <label class="gallery-search">
+                    <input type="search" id="gallery-search" placeholder="Buscar archivo..." oninput="renderGalleryGrid()">
+                </label>
+                <div style="font-size: 12px; color: #64748b;" id="gallery-status">0 archivos cargados</div>
+            </div>
+
+            <div class="gallery-grid" id="gallery-grid">
+                <!-- Se inyectan miniaturas aquí -->
+                <div style="grid-column: 1 / -1; text-align: center; color: #94a3b8; padding: 40px;">
+                    Usa el botón "Importar Directorio de Proyecto" en la barra lateral para escanear tus archivos.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Module Picker Modal -->
+    <div class="modal-overlay" id="module-modal">
+        <div class="modal-content module-picker">
+            <div class="modal-header">
+                <h3>➕ Añadir módulo</h3>
+                <button class="modal-close" onclick="closeModulePicker()">❌</button>
+            </div>
+            <div class="module-picker-grid" id="module-picker-grid">
+                <!-- Se inyectan tarjetas de módulos con JS -->
+            </div>
+        </div>
+    </div>
+
+    <div id="editor-toast" role="status" aria-live="polite"></div>
+
+    <script src="editor.js?v=editor-preview-2"></script>
+</body>
+
+</html>
