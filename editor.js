@@ -14,6 +14,7 @@ const btnAddScreen = document.getElementById('btn-add-screen');
 const selectGlobalTransition = document.getElementById('global-transition');
 const checkGlobalProgress = document.getElementById('global-progress');
 const btnExport = document.getElementById('btn-export');
+const btnExportZip = document.getElementById('btn-export-zip');
 const reviewPanel = document.getElementById('review-panel');
 const moduleModal = document.getElementById('module-modal');
 const modulePickerGrid = document.getElementById('module-picker-grid');
@@ -1369,10 +1370,11 @@ window.importDraftFile = async (file) => {
 function collectReferencedAssets() {
     const refs = [];
     const addRef = (value) => {
-        if (typeof value === 'string' && /^(fotos|videos|mp3)\//.test(value)) refs.push(value);
+        if (isLocalAssetPath(value)) refs.push(mediaPathKey(value));
     };
 
     (albumData.screens || []).forEach(screen => {
+        addRef(screen?.opts?.background?.image);
         addRef(screen?.opts?.music?.src);
         (screen.sections || []).forEach(sec => {
             addRef(sec.src);
@@ -1387,6 +1389,14 @@ function collectReferencedAssets() {
     return [...new Set(refs)];
 }
 
+function isLocalAssetPath(value) {
+    if (typeof value !== 'string' || !value.trim()) return false;
+    if (/^(https?:|data:|blob:)/i.test(value)) return false;
+    const normalized = mediaPathKey(value);
+    return /^(fotos|videos|video|mp3|musica|audio)\//i.test(normalized)
+        || /\.(avif|gif|jpe?g|png|webp|bmp|svg|mp4|m4v|mov|webm|ogv|mp3|wav|ogg|m4a|aac|flac)$/i.test(normalized);
+}
+
 function getLoadedGalleryPaths() {
     const all = [
         ...(galleryFiles?.images || []),
@@ -1394,6 +1404,14 @@ function getLoadedGalleryPaths() {
         ...(galleryFiles?.audios || [])
     ];
     return new Set(all.map(item => item.path));
+}
+
+function getAllGalleryItems() {
+    return [
+        ...(galleryFiles?.images || []),
+        ...(galleryFiles?.videos || []),
+        ...(galleryFiles?.audios || [])
+    ];
 }
 
 function buildPreviewAlbumData() {
@@ -2011,27 +2029,36 @@ function renderReviewPanel() {
 }
 
 // --- 5. EXPORTADOR ---
+function buildAlbumDataFileContent() {
+    const jsonText = JSON.stringify(albumData, null, 2);
+    const dataContent = [
+        '// Datos privados del album. Este archivo esta ignorado por Git.',
+        '// Colocalo junto a index.html para que el visor cargue este album.',
+        `window.albumData = ${jsonText};`,
+        ''
+    ].join('\n');
+    new Function('window', dataContent)({});
+    return dataContent;
+}
+
+function downloadBlob(blob, fileName) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
 btnExport.addEventListener('click', async () => {
     btnExport.textContent = "⏳ Generando...";
     try {
-        const jsonText = JSON.stringify(albumData, null, 2);
-        const dataContent = [
-            '// Datos privados del album. Este archivo esta ignorado por Git.',
-            '// Colocalo junto a index.html para que el visor cargue este album.',
-            `window.albumData = ${jsonText};`,
-            ''
-        ].join('\n');
-        new Function('window', dataContent)({});
+        const dataContent = buildAlbumDataFileContent();
 
         const blob = new Blob([dataContent], { type: 'application/javascript' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'album-data.js';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        downloadBlob(blob, 'album-data.js');
         showEditorToast('album-data.js exportado correctamente');
     } catch (err) {
         showEditorToast("No se pudo exportar album-data.js.", 'error');
@@ -2040,6 +2067,164 @@ btnExport.addEventListener('click', async () => {
         btnExport.textContent = "Exportar Datos";
     }
 });
+
+const crcTable = (() => {
+    const table = new Uint32Array(256);
+    for (let n = 0; n < 256; n++) {
+        let c = n;
+        for (let k = 0; k < 8; k++) c = (c & 1) ? (0xedb88320 ^ (c >>> 1)) : (c >>> 1);
+        table[n] = c >>> 0;
+    }
+    return table;
+})();
+
+function crc32(bytes) {
+    let c = 0xffffffff;
+    for (let i = 0; i < bytes.length; i++) c = crcTable[(c ^ bytes[i]) & 0xff] ^ (c >>> 8);
+    return (c ^ 0xffffffff) >>> 0;
+}
+
+function writeUint16(out, value) {
+    out.push(value & 0xff, (value >>> 8) & 0xff);
+}
+
+function writeUint32(out, value) {
+    out.push(value & 0xff, (value >>> 8) & 0xff, (value >>> 16) & 0xff, (value >>> 24) & 0xff);
+}
+
+function zipDosTime(date = new Date()) {
+    return ((date.getHours() & 31) << 11) | ((date.getMinutes() & 63) << 5) | ((date.getSeconds() / 2) & 31);
+}
+
+function zipDosDate(date = new Date()) {
+    return (((date.getFullYear() - 1980) & 127) << 9) | (((date.getMonth() + 1) & 15) << 5) | (date.getDate() & 31);
+}
+
+function pushBytes(out, bytes) {
+    for (let i = 0; i < bytes.length; i++) out.push(bytes[i]);
+}
+
+async function createZip(files) {
+    const encoder = new TextEncoder();
+    const out = [];
+    const central = [];
+    const now = new Date();
+    let offset = 0;
+
+    for (const file of files) {
+        const nameBytes = encoder.encode(file.path.replaceAll('\\', '/'));
+        const dataBytes = file.bytes instanceof Uint8Array ? file.bytes : new Uint8Array(file.bytes);
+        const crc = crc32(dataBytes);
+        const localStart = out.length;
+
+        writeUint32(out, 0x04034b50);
+        writeUint16(out, 20);
+        writeUint16(out, 0x0800);
+        writeUint16(out, 0);
+        writeUint16(out, zipDosTime(now));
+        writeUint16(out, zipDosDate(now));
+        writeUint32(out, crc);
+        writeUint32(out, dataBytes.length);
+        writeUint32(out, dataBytes.length);
+        writeUint16(out, nameBytes.length);
+        writeUint16(out, 0);
+        pushBytes(out, nameBytes);
+        pushBytes(out, dataBytes);
+
+        writeUint32(central, 0x02014b50);
+        writeUint16(central, 20);
+        writeUint16(central, 20);
+        writeUint16(central, 0x0800);
+        writeUint16(central, 0);
+        writeUint16(central, zipDosTime(now));
+        writeUint16(central, zipDosDate(now));
+        writeUint32(central, crc);
+        writeUint32(central, dataBytes.length);
+        writeUint32(central, dataBytes.length);
+        writeUint16(central, nameBytes.length);
+        writeUint16(central, 0);
+        writeUint16(central, 0);
+        writeUint16(central, 0);
+        writeUint16(central, 0);
+        writeUint32(central, 0);
+        writeUint32(central, offset);
+        pushBytes(central, nameBytes);
+
+        offset += out.length - localStart;
+    }
+
+    const centralOffset = out.length;
+    pushBytes(out, central);
+    writeUint32(out, 0x06054b50);
+    writeUint16(out, 0);
+    writeUint16(out, 0);
+    writeUint16(out, files.length);
+    writeUint16(out, files.length);
+    writeUint32(out, central.length);
+    writeUint32(out, centralOffset);
+    writeUint16(out, 0);
+
+    return new Blob([new Uint8Array(out)], { type: 'application/zip' });
+}
+
+async function fetchTextAsset(path) {
+    const response = await fetch(path, { cache: 'no-store' });
+    if (!response.ok) throw new Error(`No se pudo leer ${path}`);
+    return response.text();
+}
+
+async function exportAlbumZip() {
+    btnExportZip.disabled = true;
+    const previousText = btnExportZip.textContent;
+    btnExportZip.textContent = 'Generando ZIP...';
+    try {
+        const encoder = new TextEncoder();
+        const files = [
+            { path: 'index.html', bytes: encoder.encode(await fetchTextAsset('index.html')) },
+            { path: 'app.js', bytes: encoder.encode(await fetchTextAsset('app.js')) },
+            { path: 'album-data.js', bytes: encoder.encode(buildAlbumDataFileContent()) },
+            { path: '.nojekyll', bytes: encoder.encode('') }
+        ];
+
+        const refs = collectReferencedAssets();
+        const galleryItems = new Map(getAllGalleryItems().map(item => [mediaPathKey(item.path), item]));
+        const missing = [];
+
+        for (const ref of refs) {
+            const item = galleryItems.get(mediaPathKey(ref));
+            if (!item?.file) {
+                missing.push(ref);
+                continue;
+            }
+            files.push({ path: mediaPathKey(ref), bytes: new Uint8Array(await item.file.arrayBuffer()) });
+        }
+
+        if (missing.length) {
+            files.push({
+                path: 'MISSING_ASSETS.txt',
+                bytes: encoder.encode([
+                    'Estos recursos estan referenciados en album-data.js, pero no estaban cargados en el editor al exportar el ZIP:',
+                    '',
+                    ...missing
+                ].join('\n'))
+            });
+        }
+
+        const zip = await createZip(files);
+        downloadBlob(zip, `${sanitizeDraftFileName(draftNameInput?.value || activeDraftName || 'album-publicable')}.zip`);
+        const mediaCount = files.length - 4;
+        showEditorToast(missing.length ? `ZIP exportado con ${missing.length} recurso(s) faltante(s)` : `ZIP exportado con ${mediaCount} recurso(s)`);
+        if (missing.length) console.warn('Recursos no incluidos en el ZIP:', missing);
+    } catch (error) {
+        showEditorToast('No se pudo exportar el ZIP. Revisa que el editor esté abierto desde un servidor local.', 'error');
+        console.error(error);
+    } finally {
+        btnExportZip.disabled = false;
+        btnExportZip.textContent = previousText;
+    }
+}
+
+btnExportZip?.addEventListener('click', exportAlbumZip);
 
 // --- 6. GALERÍA DE MEDIOS LOCALES (WEBKITDIRECTORY & FILESYSTEM API) ---
 let galleryFiles = { images: [], videos: [], audios: [] };
@@ -2072,6 +2257,10 @@ function inferMediaBucket(file, path) {
     if (type.startsWith('video/') || /\.(mp4|m4v|mov|webm|ogv)$/i.test(normalized)) return 'videos';
     if (type.startsWith('audio/') || /\.(mp3|wav|ogg|m4a|aac|flac)$/i.test(normalized)) return 'audios';
     return '';
+}
+
+function shouldKeepImportedRoot(name = '') {
+    return /^(fotos|videos|video|mp3|musica|audio)$/i.test(mediaPathKey(name));
 }
 
 // Helper for IndexedDB to store Directory Handles
@@ -2112,7 +2301,14 @@ async function processFileExt(file, path) {
 
     const url = URL.createObjectURL(file);
     const item = { name: file.name, path: normalizedPath, url: url, file: file };
-
+    const existingIndex = galleryFiles[bucket].findIndex(existing => existing.path === normalizedPath);
+    if (existingIndex >= 0) {
+        if (galleryFiles[bucket][existingIndex].url?.startsWith('blob:')) {
+            URL.revokeObjectURL(galleryFiles[bucket][existingIndex].url);
+        }
+        galleryFiles[bucket][existingIndex] = item;
+        return;
+    }
     galleryFiles[bucket].push(item);
 }
 
@@ -2152,10 +2348,10 @@ async function importProjectDirectory() {
         const dirHandle = await showDirectoryPicker();
         await idb.set('projectDir', dirHandle);
 
-        clearGalleryFiles();
-        setGalleryLoadingStatus('Escaneando directorio...');
+        setGalleryLoadingStatus(`Agregando directorio ${dirHandle.name}...`);
 
-        await scanDirectoryHandle(dirHandle);
+        const basePath = shouldKeepImportedRoot(dirHandle.name) ? `${dirHandle.name}/` : '';
+        await scanDirectoryHandle(dirHandle, basePath);
         finishGalleryLoad();
         syncDirectoryButtons(dirHandle.name);
     } catch (e) {
@@ -2198,11 +2394,13 @@ async function restoreProjectDirectory({ silent = false, automatic = false } = {
 
 // Fallback legacy (webkitdirectory)
 dirPicker.addEventListener('change', async (e) => {
-    clearGalleryFiles();
     const files = Array.from(e.target.files);
 
     for (const file of files) {
-        const path = file.webkitRelativePath.split('/').slice(1).join('/'); // Remover nombre de la carpeta raíz
+        const parts = file.webkitRelativePath.split('/');
+        const path = shouldKeepImportedRoot(parts[0])
+            ? parts.join('/')
+            : parts.slice(1).join('/'); // Remover nombre de la carpeta raíz si es la carpeta del proyecto.
         if (path) await processFileExt(file, path);
     }
     finishGalleryLoad();
